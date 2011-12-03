@@ -1176,6 +1176,11 @@ MODULE_DESCRIPTION(DRIVER_DESC);
 MODULE_AUTHOR (DRIVER_AUTHOR);
 MODULE_LICENSE ("GPL");
 
+#ifdef CONFIG_USB_EHCI_OXNAS
+#include "ehci-oxnas.c"
+#define PLATFORM_DRIVER		ehci_oxnas_driver
+#endif
+
 #ifdef CONFIG_PCI
 #include "ehci-pci.c"
 #define	PCI_DRIVER		ehci_pci_driver

@@ -208,6 +208,13 @@ config USB_CNS3XXX_EHCI
 	  It is needed for high-speed (480Mbit/sec) USB 2.0 device
 	  support.
 
+config USB_EHCI_OXNAS
+	bool "OXNAS EHCI Module"
+	depends on USB_EHCI_HCD && ARCH_OX820
+	select USB_EHCI_ROOT_HUB_TT
+	---help---
+	  Enable support for the OX820 SOC's on-chip EHCI controller.
+
 config USB_EHCI_ATH79
 	bool "EHCI support for AR7XXX/AR9XXX SoCs"
 	depends on USB_EHCI_HCD && (SOC_AR71XX || SOC_AR724X || SOC_AR913X)

@@ -1,0 +1,9 @@
+#
+# Makefile for the linux kernel.
+#
+
+# Object file lists.
+
+obj-y := rps-irq.o rps-timer.o localtimer.o 
+obj-$(CONFIG_ARCH_OX820) += ox820.o
+obj-$(CONFIG_SMP) += platsmp.o headsmp.o

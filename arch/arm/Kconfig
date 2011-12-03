@@ -608,6 +608,14 @@ config ARCH_TEGRA
 	  This enables support for NVIDIA Tegra based systems (Tegra APX,
 	  Tegra 6xx and Tegra 2 series).
 
+config ARCH_OX820
+	bool "OX820"
+	select CPU_V6
+	select GENERIC_CLOCKEVENTS
+	select ARM_GIC
+	help
+	 This enables support for the PLX OX820 based platforms
+
 config ARCH_PNX4008
 	bool "Philips Nexperia PNX4008 Mobile"
 	select CPU_ARM926T
@@ -1029,6 +1037,8 @@ source "arch/arm/mach-exynos4/Kconfig"
 source "arch/arm/mach-shmobile/Kconfig"
 
 source "arch/arm/mach-tegra/Kconfig"
+
+source "arch/arm/mach-ox820/Kconfig"
 
 source "arch/arm/mach-u300/Kconfig"
 
