@@ -54,7 +54,6 @@ static int oxnas_rps_set_next_event(unsigned long delta, struct clock_event_devi
 
 static void oxnas_rps_set_mode(enum clock_event_mode mode, struct clock_event_device *dev)
 {
-    printk("oxnas_rps_set_mode %d \n",mode); 
     switch(mode) {
 	case CLOCK_EVT_MODE_PERIODIC:
 		/* Stop timers before programming */
@@ -74,8 +73,8 @@ static void oxnas_rps_set_mode(enum clock_event_mode mode, struct clock_event_de
 	case CLOCK_EVT_MODE_SHUTDOWN:
 	default:
         /* Stop timer */
-      //  *((volatile unsigned long*)TIMER1_CONTROL) &=
-        //    ~(TIMER_ENABLE_ENABLE   << TIMER_ENABLE_BIT);
+        *((volatile unsigned long*)TIMER1_CONTROL) &=
+            ~(TIMER_ENABLE_ENABLE   << TIMER_ENABLE_BIT);
         break;
 	}
 }
@@ -117,10 +116,7 @@ static struct clocksource clocksource_ox820 = {
 
 static void __init ox820_clocksource_init(void)
 {
-      printk("820:start timer 2 init\n");
-	
 	*((volatile unsigned long*)TIMER2_LOAD) = (0xffffff);
-	
 	
 	/* setup timer 2 as free-running clocksource */
 	*((volatile unsigned long*)TIMER2_CONTROL) = 0;
@@ -141,7 +137,6 @@ static void __init ox820_clocksource_init(void)
 }
 
 void oxnas_init_time(void) {
-	printk("void oxnas_rps_init_time(void) {\n");
 #ifdef CONFIG_LOCAL_TIMERS
 	twd_base = __io_address(OX820_TWD_BASE);
 #endif
