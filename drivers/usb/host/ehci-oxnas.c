@@ -27,13 +27,13 @@ static int start_oxnas_usb_ehci(struct platform_device *dev)
 	if (usb_disabled())
 		return -ENODEV;
 
-	printk(KERN_INFO "starting usb for 820\n");
+	/*printk(KERN_INFO "starting usb for 820\n");
 	printk("%s: block sizes: qh %Zd qtd %Zd itd %Zd sitd %Zd\n",
 		hcd_name,
 		sizeof (struct ehci_qh), sizeof (struct ehci_qtd),
 		sizeof (struct ehci_itd), sizeof (struct ehci_sitd));
 
-	printk(KERN_INFO "initialise for OX820 series USB\n");
+	printk(KERN_INFO "initialise for OX820 series USB\n");*/
 #ifdef CONFIG_OXNAS_USB_OVERCURRENT_POLARITY_NEGATIVE
     input_polarity = ((1UL << SYS_CTRL_USBHSMPH_IP_POL_A_BIT) |
                       (1UL << SYS_CTRL_USBHSMPH_IP_POL_B_BIT));
@@ -53,7 +53,7 @@ static int start_oxnas_usb_ehci(struct platform_device *dev)
 	power_polarity_default |= (output_polarity & ( 0x3 <<2));
 
 	writel(power_polarity_default, SYS_CTRL_USBHSMPH_CTRL);
-	printk(KERN_INFO "usb hsmph ctrl set to:%#lx\n", power_polarity_default);
+	/*printk(KERN_INFO "usb hsmph ctrl set to:%#lx\n", power_polarity_default);*/
 
 #ifdef CONFIG_OXNAS_USB_PORTA_POWER_CONTROL
 
@@ -390,7 +390,7 @@ static int __devinit ehci_oxnas_drv_probe(struct platform_device *pdev)
 	hcd->rsrc_len = resource_size(res);
 	hcd->regs = regs;//(void *)(USBHOST_BASE  + 0x100); //regs;
 
-	printk(KERN_INFO "@%p Device ID register %lx\n", (void *)USBHOST_BASE, *(unsigned long *)USBHOST_BASE);
+	/*printk(KERN_INFO "@%p Device ID register %lx\n", (void *)USBHOST_BASE, *(unsigned long *)USBHOST_BASE);*/
 
 	hcd->has_tt = 1;
 	ehci = hcd_to_ehci(hcd);
