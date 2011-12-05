@@ -549,4 +549,36 @@ typedef enum AHB_MON_HBURST {
 
 #define OX820_ARM11MP_TWD_SIZE 0x100
 
+/* PCIe support */
+//#define pcibios_assign_all_busses() 1
+#define PCIBIOS_MIN_IO	0	/* May need something other than zero once we understand the significance */
+#define PCIBIOS_MIN_MEM	0
+
+/* PCIe core register contents */
+#define SYS_CTRL_PCIE_DEVICE_TYPE_BIT	0
+#define SYS_CTRL_PCIE_DEVICE_TYPE_ENDPOINT			0
+#define SYS_CTRL_PCIE_DEVICE_TYPE_LEGACY_ENDPOINT	1
+#define SYS_CTRL_PCIE_DEVICE_TYPE_ROOT				4
+#define SYS_CTRL_PCIE_LTSSM_BIT			4
+#define SYS_CTRL_PCIE_READY_ENTR_L23_BIT	9
+#define SYS_CTRL_PCIE_LINK_UP_BIT		11
+#define SYS_CTRL_PCIE_OBTRANS_BIT		12
+
+/* PCIe slave control contents */
+#define SYS_CTRL_PCIE_SLAVE_BE_BIT	22
+
+/* Inbound address translation register in the PCIe ELBI region */
+#define PIM0_MEM_ADDR_LIMIT		(PCIEA_ELBI_BASE + 0x00)
+#define PIM1_MEM_ADDR_LIMIT		(PCIEA_ELBI_BASE + 0x08)
+#define PIM0_MEM_ADDR_START		(PCIEA_ELBI_BASE + 0x10)
+#define PIM1_MEM_ADDR_START		(PCIEA_ELBI_BASE + 0x18)
+#define PIM_IO_ADDR_OFFSET		(PCIEA_ELBI_BASE + 0x20)
+
+#define IB_ADDR_XLATE_ENABLE	(PCIEA_ELBI_BASE + 0xFC)
+#define ENABLE_IN_ADDR_TRANS_BIT	0
+
+/* Std PCI configuration registers */
+#define PCI_CONFIG_VERSION_DEVICEID_REG_OFFSET	0x00
+#define PCI_CONFIG_COMMAND_STATUS_REG_OFFSET	0x04
+
 #endif // __ASM_ARCH_HARDWARE_H

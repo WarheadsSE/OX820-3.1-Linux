@@ -330,7 +330,7 @@ static void __init oxnas_mapio(void)
         *(volatile u32*)SYS_CTRL_DEBUG_SEL       &= ~pins ;
         *(volatile u32*)SYS_CTRL_ALTERNATIVE_SEL &= ~pins ;
 	}
-
+#define CONFIG_OXNAS_PCIE_RESET_GPIO 44
 #ifdef	CONFIG_PCI
 #if (CONFIG_OXNAS_PCIE_RESET_GPIO < SYS_CTRL_NUM_PINS)
 #define PCIE_RESET_PIN		CONFIG_OXNAS_PCIE_RESET_GPIO
