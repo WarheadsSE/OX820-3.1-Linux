@@ -3688,7 +3688,7 @@ static struct net_device_stats *get_stats(struct net_device *dev)
 static void netpoll(struct net_device *netdev)
 {
     disable_irq(netdev->irq);
-    int_handler(netdev->irq, netdev, NULL);
+    int_handler(netdev->irq, netdev); // only 2 arguments.
     enable_irq(netdev->irq);
 }
 #endif // CONFIG_NET_POLL_CONTROLLER
