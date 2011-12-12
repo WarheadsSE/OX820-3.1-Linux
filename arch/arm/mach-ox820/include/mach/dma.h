@@ -27,7 +27,7 @@
 
 #ifndef __ASM_ARCH_DMA_H
 #define __ASM_ARCH_DMA_H
-
+#ifdef HAS_OX820_DMA
 #include <asm/scatterlist.h>
 #include <linux/semaphore.h>
 #include <linux/ata.h>
@@ -417,5 +417,5 @@ extern void odrb_reader_free_sg_list(odrb_sg_list_t *sg_list);
 #endif // CONFIG_ODRB_USE_PRDS
 
 #endif // CONFIG_OXNAS_ODRB_DMA_SUPPORT
-
+#endif // HAS_OX820_DMA
 #endif // __ASM_ARCH_DMA_H
