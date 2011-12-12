@@ -249,7 +249,7 @@ EXPORT_SYMBOL(__ox820_outsl);
 #define CONFIG_WINDOW_OFFSET			(NON_PREFETCHABLE_WINDOW_SIZE + PREFETCHABLE_WINDOW_SIZE + IO_WINDOW_SIZE)
 
 static int __init ox820_map_irq(
-	struct pci_dev *dev,
+	const struct pci_dev *dev,
 	u8              slot,
 	u8              pin)
 {
