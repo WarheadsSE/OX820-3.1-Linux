@@ -549,11 +549,6 @@ typedef enum AHB_MON_HBURST {
 
 #define OX820_ARM11MP_TWD_SIZE 0x100
 
-/* PCIe support */
-//#define pcibios_assign_all_busses() 1
-#define PCIBIOS_MIN_IO	0	/* May need something other than zero once we understand the significance */
-#define PCIBIOS_MIN_MEM	0
-
 /* PCIe core register contents */
 #define SYS_CTRL_PCIE_DEVICE_TYPE_BIT	0
 #define SYS_CTRL_PCIE_DEVICE_TYPE_ENDPOINT			0
