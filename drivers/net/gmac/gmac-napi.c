@@ -26,6 +26,7 @@
 #include <linux/firmware.h>
 #include <linux/in.h>
 #include <linux/init.h>
+#include <linux/interrupt.h>
 #include <linux/netdevice.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
@@ -36,7 +37,6 @@
 #include <net/ip.h>
 #include <linux/io.h>
 #include <mach/hardware.h>
-//#include <mach/oxnas_net.h>
 #include <mach/irqs.h>
 
 #ifdef CONFIG_SUPPORT_LEON
