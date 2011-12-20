@@ -231,6 +231,13 @@ config SATA_NV
 
 	  If unsure, say N.
 
+config SATA_OX820
+	tristate "OX820 SATA support"
+	help
+	  This option enables support for the OX820 Serial ATA family.
+
+	  If unsure, say N.
+
 config SATA_PROMISE
 	tristate "Promise SATA TX2/TX4 support"
 	depends on PCI

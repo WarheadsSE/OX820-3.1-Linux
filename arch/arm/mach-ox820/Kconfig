@@ -32,6 +32,24 @@ config SRAM_NUM_PAGES
         help
 	 Determines the number of pages of SRAM that are assumed to exist in the system memory map
 
+config ODRB_NUM_SATA_PRD_ARRAYS
+        int "ODRB_NUM_SATA_PRD_ARRAYS"
+        default 2
+        help
+	 sata somthings...
+
+config ARCH_OXNAS_MAX_SATA_SG_ENTRIES
+        int "ARCH_OXNAS_MAX_SATA_SG_ENTRIES"
+        default 64
+        help
+	 sata somthings... #2
+
+config ODRB_SATA_PRD_ARRAY_SIZE
+	int "ODRB_SATA_PRD_ARRAY_SIZE"
+	default 256
+	help
+	 sata somthing... #3
+
 config ARCH_OXNAS_UART1
 	bool "Support UART1"
 	default n
