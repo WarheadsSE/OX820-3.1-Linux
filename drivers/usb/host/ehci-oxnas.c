@@ -16,7 +16,7 @@
 
 #define rdl(off)	__raw_readl(hcd->regs + (off))
 #define wrl(off, val)	__raw_writel((val), hcd->regs + (off))
-
+#define USB_FROM_PLLB 1
 static int start_oxnas_usb_ehci(struct platform_device *dev)
 {
     unsigned long input_polarity = 0;
