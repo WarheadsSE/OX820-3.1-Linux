@@ -418,7 +418,7 @@ static void change_rx_enable(
 static void configure_for_link_speed(gmac_priv_t *priv)
 {
 	
-	u32 link_speed = ethtool_cmd_speed(priv->ethtool_cmd);// priv->mii.using_1000 ? 1000 : priv->mii.using_100 ? 100 : 10;
+	u32 link_speed = ethtool_cmd_speed(&(priv->ethtool_cmd));// priv->mii.using_1000 ? 1000 : priv->mii.using_100 ? 100 : 10;
 
 	if (priv->copro_started) {
 		unsigned long irq_flags = 0;
