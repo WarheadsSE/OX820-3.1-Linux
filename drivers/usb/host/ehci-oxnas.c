@@ -403,7 +403,7 @@ static int __devinit ehci_oxnas_drv_probe(struct platform_device *pdev)
 
 
 
-	err = usb_add_hcd(hcd, irq, 0);
+	err = usb_add_hcd(hcd, irq, IRQF_SHARED | IRQF_DISABLED);
 	if (err)
 		goto err4;
 
