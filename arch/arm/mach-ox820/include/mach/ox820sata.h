@@ -232,6 +232,7 @@ that reside in a different clock domain to the processor bus */
 #define OX820SATA_DEVICE_CONTROL_PADPAT (1 << 16)
 #define OX820SATA_DEVICE_CONTROL_PRTRST (1 << 8)
 #define OX820SATA_DEVICE_CONTROL_RAMRST (1 << 12)
+#define OX820SATA_DEVICE_CONTROL_ATA_ERR_OVERRIDE (1 << 28)
 
 /** ORB4 register bits */
 #define OX820SATA_ORB4_SRST	       (1 << 26)
@@ -240,6 +241,12 @@ that reside in a different clock domain to the processor bus */
 #define OXNASSATA_NOTRAID 0
 #define OXNASSATA_RAID0   1
 #define OXNASSATA_RAID1   2
+
+#define OXNASSATA_UCODE_JBOD	0
+#define OXNASSATA_UCODE_RAID0	1
+#define OXNASSATA_UCODE_RAID1	2
+#define OXNASSATA_UCODE_NONE	3
+
 
 /** OX820 specific HW-RAID register values */
 #define OX820SATA_RAID_TWODISKS 3
@@ -267,6 +274,7 @@ an interrupt */
 
 /* enable jbod micro-code */
 #define OX820SATA_DPC_JBOD_UCODE      ( 1 << 0 )
+#define OX820SATA_DPC_HW_SUPERMUX_AUTO      ( 1 << 0 )
 #define OX820SATA_DPC_FIS_SWCH        ( 1 << 1 )
 
 /* Final EOTs */
