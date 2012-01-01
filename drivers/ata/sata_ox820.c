@@ -36,6 +36,7 @@
 #include <linux/proc_fs.h>
 #include <linux/raid/md_p.h>
 #include <linux/raid/md_u.h>
+#include <linux/leds.h>
 
 #include <scsi/scsi_host.h>
 #include <scsi/scsi_cmnd.h>
@@ -154,7 +155,6 @@ static void ox820sata_tf_read(struct ata_port *ap, struct ata_taskfile *tf);
 
 /* QC */
 static bool ox820sata_qc_fill_rtf(struct ata_queued_cmd *qc);
-static int ox820sata_qc_new(struct ata_port *ap);
 #define ox820sata_qc_defer ata_std_qc_defer
 static void ox820sata_freeze(struct ata_port* ap);
 static void ox820sata_thaw(struct ata_port* ap);
@@ -305,6 +305,83 @@ DEFINE_SPINLOCK(async_register_lock);
 
 #define SATA_PHY_ASIC_STAT (SATA_PHY_BASE + 0x00)
 #define SATA_PHY_ASIC_DATA (SATA_PHY_BASE + 0x04)
+
+/***************************************************************************
+* LED code
+***************************************************************************/
+#ifdef CONFIG_LEDS_TRIGGERS
+static struct led_classdev* ox820_disklight_led = NULL;
+
+/* directly from drivers/leds/leds.h */
+static inline void led_set_brightness(struct led_classdev *led_cdev,
+					enum led_brightness value)
+{
+	if (value > led_cdev->max_brightness) {
+		value = led_cdev->max_brightness;
+    }
+	led_cdev->brightness = value;
+	if (!(led_cdev->flags & LED_SUSPENDED)) {
+		led_cdev->brightness_set(led_cdev, value);
+    }
+}
+
+#endif
+
+static inline void ox820_disklight_led_turn_on(void)
+{
+#ifdef CONFIG_LEDS_TRIGGERS
+    struct led_classdev* ox820_disklight = ox820_disklight_led;
+    
+    if(NULL != ox820_disklight) {
+        led_set_brightness(ox820_disklight, ox820_disklight->max_brightness);
+    }
+#endif
+}
+
+static inline void ox820_disklight_led_turn_off(void)
+{
+#ifdef CONFIG_LEDS_TRIGGERS
+    struct led_classdev* ox820_disklight = ox820_disklight_led;
+    
+    if(NULL != ox820_disklight) {
+        led_set_brightness(ox820_disklight, LED_OFF);
+    }
+#endif
+}
+
+#ifdef CONFIG_LEDS_TRIGGERS
+static void ox820_disklight_trig_activate(struct led_classdev* led_cdev)
+{
+    ox820_disklight_led = led_cdev;
+}
+
+static void ox820_disklight_trig_deactivate(struct led_classdev* led_cdev)
+{
+    ox820_disklight_led = NULL;
+}
+
+static struct led_trigger ox820_disklight_led_trigger = {
+	.name     = "ox820_disklight",
+	.activate = ox820_disklight_trig_activate,
+	.deactivate = ox820_disklight_trig_deactivate,
+};
+#endif
+
+static int ox820_disklight_led_register(void)
+{
+#ifdef CONFIG_LEDS_TRIGGERS
+    return led_trigger_register(&ox820_disklight_led_trigger);
+#else
+    return 0;
+#endif
+}
+
+static void ox820_disklight_led_unregister(void)
+{
+#ifdef CONFIG_LEDS_TRIGGERS
+    led_trigger_unregister(&ox820_disklight_led_trigger);
+#endif
+}
 
 /***************************************************************************
 * ASIC access
@@ -879,28 +956,6 @@ static int ox820sata_driver_probe(struct platform_device* pdev)
         printk(KERN_ERR DRIVER_NAME " Couldn't create an ata host.\n");
     }
 
-#ifdef CONFIG_SATA_OXNAS_DISK_LIGHT
-#if (CONFIG_SATA_OXNAS_DISK_LIGHT_GPIO_LINE < SYS_CTRL_NUM_PINS)
-    writel(readl(SYS_CTRL_SECONDARY_SEL)   & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SYS_CTRL_SECONDARY_SEL);
-    writel(readl(SYS_CTRL_TERTIARY_SEL)    & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SYS_CTRL_TERTIARY_SEL);
-    writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SYS_CTRL_QUATERNARY_SEL);
-    writel(readl(SYS_CTRL_DEBUG_SEL)       & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SYS_CTRL_DEBUG_SEL);
-    writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SYS_CTRL_ALTERNATIVE_SEL);
-#else
-    writel(readl(SEC_CTRL_SECONDARY_SEL)   & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SEC_CTRL_SECONDARY_SEL);
-    writel(readl(SEC_CTRL_TERTIARY_SEL)    & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SEC_CTRL_TERTIARY_SEL);
-    writel(readl(SEC_CTRL_QUATERNARY_SEL)  & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SEC_CTRL_QUATERNARY_SEL);
-    writel(readl(SEC_CTRL_DEBUG_SEL)       & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SEC_CTRL_DEBUG_SEL);
-    writel(readl(SEC_CTRL_ALTERNATIVE_SEL) & ~(OXNAS820SATA_DISK_LIGHT_GPIO_OUT), SEC_CTRL_ALTERNATIVE_SEL);
-#endif
-
-    /* enable output */
-    writel(OXNAS820SATA_DISK_LIGHT_GPIO_OUT, GPIO_DISKLIGHT_OUTPUT_ENABLE);
-
-    /* disk light off */
-    writel(OXNAS820SATA_DISK_LIGHT_GPIO_OUT, GPIO_DISKLIGHT_OUTPUT_CLEAR);
-#endif  /* CONFIG_SATA_OXNAS_DISK_LIGHT */
-
     /* set to base of ata core */
     host->iomap  = iomem;
 
@@ -1007,7 +1062,13 @@ static void __exit ox820sata_device_exit(void)
 static int __init ox820sata_init_driver( void )
 {
     int ret;
-    ret = platform_driver_register( &ox820sata_driver.driver );
+    ret = ox820_disklight_led_register();
+    if(0 == ret) {
+        ret = platform_driver_register( &ox820sata_driver.driver );
+        if(ret != 0) {
+            ox820_disklight_led_unregister();
+        }
+    }
     return ret; 
 }
 
@@ -1017,10 +1078,14 @@ static int __init ox820sata_init_driver( void )
 static void __exit ox820sata_exit_driver( void )
 {
     platform_driver_unregister( &ox820sata_driver.driver );
+    ox820_disklight_led_unregister();
 }
 
 module_init(ox820sata_init_driver);
 module_exit(ox820sata_exit_driver);
+
+module_init(ox820sata_device_init);
+module_exit(ox820sata_device_exit);
 
 /***************************************************************************
 * Microcodes
@@ -1405,10 +1470,7 @@ static unsigned int ox820sata_qc_issue(struct ata_queued_cmd *qc)
     pd = (ox820sata_private_data*)qc->ap->private_data;
     ioaddr = ox820sata_get_io_base(qc->ap);
 
-#ifdef CONFIG_SATA_OXNAS_DISK_LIGHT
-    /* disk light on */
-    writel(OXNAS820SATA_DISK_LIGHT_GPIO_OUT, GPIO_DISKLIGHT_OUTPUT_SET);
-#endif  // CONFIG_SATA_OXNAS_DISK_LIGHT
+    ox820_disklight_led_turn_on();
 
     /* check the core is idle */
     if (readl(ioaddr + OX820SATA_SATA_COMMAND) & CMD_CORE_BUSY) {
@@ -1563,7 +1625,7 @@ static irqreturn_t ox820sata_irq_handler(int irq, void *dev_instance)
     	int check_for_6320_present = 0;
     	int bug_6320_present = 0;
 
-DPRINTK("outer loop irq %d, int_status 0x%p\n", irq, (void*)int_status);
+        DPRINTK("outer loop irq %d, int_status 0x%p\n", irq, (void*)int_status);
 		check_for_6320_present = no_microcode;
         /*
          * Needed for all commands that do not actively use micro-code for
@@ -1595,31 +1657,19 @@ DPRINTK("outer loop irq %d, int_status 0x%p\n", irq, (void*)int_status);
 			printk(KERN_WARNING "ox820sata_irq_handler() Interrupt from SATA "
 				"port 1 when configured for single SATA\n");
 		} else {
+            u32 port_no;
 			smp_rmb();
-#if 0            
-			if (ox820sata_isr_callback) {
-				/* Invoke the interrupt hook routine */
-				ret |= ox820sata_isr_callback(int_status, ox820sata_isr_arg, bug_6320_present);
-			} else 
-#endif            
-            {
-				u32 port_no;
+            for (port_no = 0; port_no < ports; ++port_no) {
+                u32 mask = (OX820SATA_COREINT_END << port_no );
 
-				for (port_no = 0; port_no < ports; ++port_no) {
-					u32 mask = (OX820SATA_COREINT_END << port_no );
-
-					if (int_status & mask) {
-						ox820sata_port_irq(((struct ata_host* )dev_instance)->ports[port_no], bug_6320_present);
-						ret = IRQ_HANDLED;
-					}
-				}
-			}
+                if (int_status & mask) {
+                    ox820sata_port_irq(((struct ata_host* )dev_instance)->ports[port_no], bug_6320_present);
+                    ret = IRQ_HANDLED;
+                }
+            }
 		}
 
-#ifdef CONFIG_SATA_OXNAS_DISK_LIGHT
-       /* disk light off */
-       writel(OXNAS820SATA_DISK_LIGHT_GPIO_OUT, GPIO_DISKLIGHT_OUTPUT_CLEAR);
-#endif  /* CONFIG_SATA_OXNAS_DISK_LIGHT */
+        ox820_disklight_led_turn_off();
     }
     return ret;
 }
@@ -2072,7 +2122,7 @@ void ox820sata_thaw_host(int port_no)
 /***************************************************************************
 * Error Handling
 ***************************************************************************/
-#define ERROR_HW_ACQUIRE_TIMEOUT_JIFFIES (10 * HZ)
+
 static void ox820sata_error_handler(struct ata_port *ap)
 {
 	ox820sata_freeze_host(ap->port_no);
@@ -2089,7 +2139,8 @@ static void ox820sata_error_handler(struct ata_port *ap)
 	ox820sata_thaw_host(ap->port_no);
 }
 
-static void ox820sata_post_internal_cmd(struct ata_queued_cmd *qc) {
+static void ox820sata_post_internal_cmd(struct ata_queued_cmd *qc) 
+{
     if (qc->flags & ATA_QCFLAG_FAILED) {
     	ox820sata_progressive_cleanup();
     }
