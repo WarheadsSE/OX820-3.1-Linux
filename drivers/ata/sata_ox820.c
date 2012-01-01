@@ -1931,20 +1931,20 @@ static void configure_ucode_engine(int mode, int reset, int program, int set_par
 		unsigned int  dst;
 
 		switch (mode) {
-			case OXNASSATA_UCODE_RAID0:
-			case OXNASSATA_UCODE_RAID1:
-				DPRINTK("Loading RAID ucode\n");
-				src = (unsigned int*)&ox820_raid_microcode[1];
-				break;
-			
-			case OXNASSATA_UCODE_JBOD:
-				DPRINTK("Loading JBOD ucode\n");
-				src = (unsigned int*)&ox820_jbod_microcode[1];
-				break;
-			
-			default:
-				BUG();
-				break;
+		case OXNASSATA_UCODE_RAID0:
+		case OXNASSATA_UCODE_RAID1:
+			DPRINTK("Loading RAID ucode\n");
+			src = (unsigned int*)&ox820_raid_microcode[1];
+			break;
+		
+		case OXNASSATA_UCODE_JBOD:
+			DPRINTK("Loading JBOD ucode\n");
+			src = (unsigned int*)&ox820_jbod_microcode[1];
+			break;
+		
+		default:
+			BUG();
+			break;
 		}
 
 		dst = OX820SATA_UCODE_STORE;
@@ -1960,68 +1960,68 @@ static void configure_ucode_engine(int mode, int reset, int program, int set_par
 		u32 reg;
 
 		switch (mode) {
-			case OXNASSATA_UCODE_RAID0:
-			case OXNASSATA_UCODE_RAID1:
-				DPRINTK("Enabling H/W supermux for RAID ucode\n");
-				
-				reg = readl(OX820SATA_DATA_PLANE_CTRL);
-				reg |= OX820SATA_DPC_HW_SUPERMUX_AUTO;
-				reg &= ~OX820SATA_DPC_FIS_SWCH;
-				writel(reg, OX820SATA_DATA_PLANE_CTRL);
-				break;
+		case OXNASSATA_UCODE_RAID0:
+		case OXNASSATA_UCODE_RAID1:
+			DPRINTK("Enabling H/W supermux for RAID ucode\n");
 			
-			case OXNASSATA_UCODE_JBOD:
-				DPRINTK("Disabling H/W supermux for non-RAID ucode\n");
-				
-				reg = readl(OX820SATA_DATA_PLANE_CTRL);
-				reg &= ~OX820SATA_DPC_HW_SUPERMUX_AUTO;
-				reg &= ~OX820SATA_DPC_FIS_SWCH;
-				writel(reg, OX820SATA_DATA_PLANE_CTRL);
-				break;
+			reg = readl(OX820SATA_DATA_PLANE_CTRL);
+			reg |= OX820SATA_DPC_HW_SUPERMUX_AUTO;
+			reg &= ~OX820SATA_DPC_FIS_SWCH;
+			writel(reg, OX820SATA_DATA_PLANE_CTRL);
+			break;
+		
+		case OXNASSATA_UCODE_JBOD:
+			DPRINTK("Disabling H/W supermux for non-RAID ucode\n");
 			
-			case OXNASSATA_UCODE_NONE:
-				DPRINTK("Enabling H/W supermux for no ucode\n");
-				
-				reg = readl(OX820SATA_DATA_PLANE_CTRL);
-				reg |= OX820SATA_DPC_HW_SUPERMUX_AUTO;
-				reg &= ~OX820SATA_DPC_FIS_SWCH;
-				writel(reg, OX820SATA_DATA_PLANE_CTRL);
-				break;
+			reg = readl(OX820SATA_DATA_PLANE_CTRL);
+			reg &= ~OX820SATA_DPC_HW_SUPERMUX_AUTO;
+			reg &= ~OX820SATA_DPC_FIS_SWCH;
+			writel(reg, OX820SATA_DATA_PLANE_CTRL);
+			break;
+		
+		case OXNASSATA_UCODE_NONE:
+			DPRINTK("Enabling H/W supermux for no ucode\n");
 			
-			default:
-				BUG();
-				break;
+			reg = readl(OX820SATA_DATA_PLANE_CTRL);
+			reg |= OX820SATA_DPC_HW_SUPERMUX_AUTO;
+			reg &= ~OX820SATA_DPC_FIS_SWCH;
+			writel(reg, OX820SATA_DATA_PLANE_CTRL);
+			break;
+		
+		default:
+			BUG();
+			break;
 		}
 		wmb();
 
 		switch (mode) {
-			case OXNASSATA_UCODE_RAID0:
-				DPRINTK("Configuring ucode engine for RAID0\n");
-			
-				writel( 0, OX820SATA_RAID_WP_BOT_LOW );
-				writel( 0, OX820SATA_RAID_WP_BOT_HIGH);
-				writel( 0xffffffff, OX820SATA_RAID_WP_TOP_LOW );
-				writel( 0x7fffffff, OX820SATA_RAID_WP_TOP_HIGH);
-				writel( 0xffffffff, OX820SATA_RAID_SIZE_LOW   );
-				writel( 0x7fffffff, OX820SATA_RAID_SIZE_HIGH  );
-				break;
-			
-			case OXNASSATA_UCODE_RAID1:
-				DPRINTK("Configuring ucode engine for RAID1\n");
-			
-				writel( 0, OX820SATA_RAID_WP_BOT_LOW );
-				writel( 0, OX820SATA_RAID_WP_BOT_HIGH);
-				writel( 0xffffffff, OX820SATA_RAID_WP_TOP_LOW );
-				writel( 0x7fffffff, OX820SATA_RAID_WP_TOP_HIGH);
-				writel( 0, OX820SATA_RAID_SIZE_LOW   );
-				writel( 0, OX820SATA_RAID_SIZE_HIGH  );
-				break;
-			
-			case OXNASSATA_UCODE_JBOD:
-				DPRINTK("Starting JBOD ucode\n");
-			
-				writel(1, OX820SATA_PROC_START);
-				break;
+		case OXNASSATA_UCODE_RAID0:
+			DPRINTK("Configuring ucode engine for RAID0\n");
+		
+			writel( 0, OX820SATA_RAID_WP_BOT_LOW );
+			writel( 0, OX820SATA_RAID_WP_BOT_HIGH);
+			writel( 0xffffffff, OX820SATA_RAID_WP_TOP_LOW );
+			writel( 0x7fffffff, OX820SATA_RAID_WP_TOP_HIGH);
+			writel( 0xffffffff, OX820SATA_RAID_SIZE_LOW   );
+			writel( 0x7fffffff, OX820SATA_RAID_SIZE_HIGH  );
+			break;
+		
+		case OXNASSATA_UCODE_RAID1:
+			DPRINTK("Configuring ucode engine for RAID1\n");
+		
+			writel( 0, OX820SATA_RAID_WP_BOT_LOW );
+			writel( 0, OX820SATA_RAID_WP_BOT_HIGH);
+			writel( 0xffffffff, OX820SATA_RAID_WP_TOP_LOW );
+			writel( 0x7fffffff, OX820SATA_RAID_WP_TOP_HIGH);
+			writel( 0, OX820SATA_RAID_SIZE_LOW   );
+			writel( 0, OX820SATA_RAID_SIZE_HIGH  );
+			break;
+		
+		case OXNASSATA_UCODE_JBOD:
+			DPRINTK("Starting JBOD ucode\n");
+		
+			writel(1, OX820SATA_PROC_START);
+			break;
 		}
 		wmb();
 	}
@@ -2034,39 +2034,40 @@ void ox820sata_set_mode(u32 mode, u32 force)
 	}
 
 	switch (mode) {
-		case OXNASSATA_UCODE_NONE:
-			configure_ucode_engine(OXNASSATA_UCODE_NONE, 1, 0, 1);
-			break;
-		
-		case OXNASSATA_UCODE_JBOD:
-			configure_ucode_engine(OXNASSATA_UCODE_JBOD, 1, 1, 1);
-			break;
-		
-		case OXNASSATA_UCODE_RAID0:
-			switch (current_ucode_mode) {
-				case OXNASSATA_UCODE_RAID1:
-					configure_ucode_engine(OXNASSATA_UCODE_RAID0, 0, 0, 1);
-					break;
-				
-				default:
-					configure_ucode_engine(OXNASSATA_UCODE_RAID0, 1, 1, 1);
-					break;
-			}
-			break;
-			
+	case OXNASSATA_UCODE_NONE:
+		configure_ucode_engine(OXNASSATA_UCODE_NONE, 1, 0, 1);
+		break;
+	
+	case OXNASSATA_UCODE_JBOD:
+		configure_ucode_engine(OXNASSATA_UCODE_JBOD, 1, 1, 1);
+		break;
+	
+	case OXNASSATA_UCODE_RAID0:
+		switch (current_ucode_mode) {
 		case OXNASSATA_UCODE_RAID1:
-			switch (current_ucode_mode) {
-				case OXNASSATA_UCODE_RAID0:
-					configure_ucode_engine(OXNASSATA_UCODE_RAID1, 0, 0, 1);
-					break;
-				
-				default:
-					configure_ucode_engine(OXNASSATA_UCODE_RAID1, 1, 1, 1);
-					break;
-			}
+			configure_ucode_engine(OXNASSATA_UCODE_RAID0, 0, 0, 1);
 			break;
+		
 		default:
-			BUG();
+			configure_ucode_engine(OXNASSATA_UCODE_RAID0, 1, 1, 1);
+			break;
+		}
+		break;
+		
+	case OXNASSATA_UCODE_RAID1:
+		switch (current_ucode_mode) {
+		case OXNASSATA_UCODE_RAID0:
+			configure_ucode_engine(OXNASSATA_UCODE_RAID1, 0, 0, 1);
+			break;
+		
+		default:
+			configure_ucode_engine(OXNASSATA_UCODE_RAID1, 1, 1, 1);
+			break;
+		}
+		break;
+	default:
+		BUG();
+		break;
 	}
 
 	current_ucode_mode = mode;
