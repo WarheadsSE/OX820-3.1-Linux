@@ -999,7 +999,7 @@ static int ox820sata_driver_remove(struct platform_device* pdev)
  */
 static int __init ox820sata_init_driver( void )
 {
-	int ret;
+	int ret, aborted_at = 0;
 	/* check ports parameter */
 	if(ports < 1 || ports > 2) {
 		return -EINVAL;
@@ -1033,7 +1033,6 @@ static int __init ox820sata_init_driver( void )
 		}
 	}
     
-
 	ret = ox820_disklight_led_register();
     
 	if(0 == ret) {
@@ -1044,11 +1043,13 @@ static int __init ox820sata_init_driver( void )
 	}
     
 	if(0 == ret) {
+        ++aborted_at;
 		/* reset the core */
 		ox820sata_reset_core();
 	}
 
 	if(0 == ret) {
+        ++aborted_at;
 		/* register the ata device for the driver to find */
 		ret = platform_device_register( &ox820sata_dev );
 		if(ret != 0) {
@@ -1056,6 +1057,8 @@ static int __init ox820sata_init_driver( void )
 			ox820_disklight_led_unregister();
 		}
 	}
+    
+    printk(KERN_ERR"sata_ox820.c: Initialization result %u at %u\n", ret, aborted_at);
 
 	return ret; 
 }
