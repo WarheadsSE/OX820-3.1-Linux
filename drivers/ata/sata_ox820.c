@@ -1043,13 +1043,13 @@ static int __init ox820sata_init_driver( void )
 	}
     
 	if(0 == ret) {
-        ++aborted_at;
+	++aborted_at;
 		/* reset the core */
 		ox820sata_reset_core();
 	}
 
 	if(0 == ret) {
-        ++aborted_at;
+	++aborted_at;
 		/* register the ata device for the driver to find */
 		ret = platform_device_register( &ox820sata_dev );
 		if(ret != 0) {
@@ -1058,7 +1058,11 @@ static int __init ox820sata_init_driver( void )
 		}
 	}
     
-    printk(KERN_ERR"sata_ox820.c: Initialization result %u at %u\n", ret, aborted_at);
+	if(0 == ret) {
+		printk(KERN_INFO"sata_ox820: Initialized\n");
+	} else {
+		printk(KERN_ERR"sata_ox820: Initialization result %u at %u\n", ret, aborted_at);
+	}
 
 	return ret; 
 }
