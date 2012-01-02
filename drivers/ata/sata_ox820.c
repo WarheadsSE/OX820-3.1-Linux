@@ -126,9 +126,6 @@ extern const unsigned int ox820_raid_microcode[];
 /***************************************************************************
 * Function Prototypes
 ***************************************************************************/
-static int __init ox820sata_device_init(void);
-static void __exit ox820sata_device_exit(void);
-
 /* ASIC access */
 static void wait_cr_ack(void);
 static u16 read_cr(u16 address);
@@ -998,30 +995,26 @@ static int ox820sata_driver_remove(struct platform_device* pdev)
 
 /** 
  * module initialisation
- * @return success is 0
+ * @return success
  */
-static int __init ox820sata_device_init( void )
+static int __init ox820sata_init_driver( void )
 {
 	int ret;
-	
 	/* check ports parameter */
 	if(ports < 1 || ports > 2) {
 		return -EINVAL;
 	}
-
-	/* reset the core */
-	ox820sata_reset_core();
-
+    
 	/* check there is enough space for PRD entries in SRAM */
 	if (ATA_PRD_TBL_SZ > OX820SATA_PRD_SIZE) {
 		printk(KERN_ERR"PRD table size is bigger than the space allocated for it in hardware.h");
-		BUG();
+		return -EINVAL;
 	}
 
 	/* check this matches the space reserved in hardware.h */
 	if (sizeof(sgdma_request_t) > OX820SATA_SGDMA_SIZE) {
 		printk(KERN_ERR"sgdma_request_t has grown beyond the space allocated for it in hardware.h");
-		BUG();
+		return -EINVAL;
 	}
 
 	if(ports > 1)
@@ -1030,45 +1023,40 @@ static int __init ox820sata_device_init( void )
 		/* check there is enough space for PRD entries in SRAM */
 		if ((2 * ATA_PRD_TBL_SZ) > OX820SATA_PRD_SIZE) {
 			printk(KERN_ERR"PRD table size is bigger than the space allocated for it in hardware.h");
-			BUG();
+			return -EINVAL;
 		}
 
 		/* check this matches the space reserved in hardware.h */
 		if ((2 * sizeof(sgdma_request_t)) > OX820SATA_SGDMA_SIZE) {
 			printk(KERN_ERR"sgdma_request_t has grown beyond the space allocated for it in hardware.h");
-			BUG();
+			return -EINVAL;
 		}
 	}
+    
 
-	/* register the ata device for the driver to find */
-	ret = platform_device_register( &ox820sata_dev );
-	DPRINTK(" %i\n", ret);
-   
-	return ret;
-}
-
-/** 
- * module cleanup
- */
-static void __exit ox820sata_device_exit(void)
-{
-	platform_device_unregister( &ox820sata_dev );
-}
-
-/** 
- * module initialisation
- * @return success
- */
-static int __init ox820sata_init_driver( void )
-{
-	int ret;
 	ret = ox820_disklight_led_register();
+    
 	if(0 == ret) {
 		ret = platform_driver_register( &ox820sata_driver.driver );
-		if(ret != 0) {
+		if(0 != ret) {
 			ox820_disklight_led_unregister();
 		}
 	}
+    
+	if(0 == ret) {
+		/* reset the core */
+		ox820sata_reset_core();
+	}
+
+	if(0 == ret) {
+		/* register the ata device for the driver to find */
+		ret = platform_device_register( &ox820sata_dev );
+		if(ret != 0) {
+			platform_driver_unregister( &ox820sata_driver.driver );
+			ox820_disklight_led_unregister();
+		}
+	}
+
 	return ret; 
 }
 
@@ -1077,15 +1065,13 @@ static int __init ox820sata_init_driver( void )
  */
 static void __exit ox820sata_exit_driver( void )
 {
+	platform_device_unregister( &ox820sata_dev );
 	platform_driver_unregister( &ox820sata_driver.driver );
 	ox820_disklight_led_unregister();
 }
 
 module_init(ox820sata_init_driver);
 module_exit(ox820sata_exit_driver);
-
-module_init(ox820sata_device_init);
-module_exit(ox820sata_device_exit);
 
 /***************************************************************************
 * Microcodes
