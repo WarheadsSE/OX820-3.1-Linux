@@ -267,6 +267,7 @@ static struct platform_driver ox820_gpio_driver = {
 static int __init ox820_gpio_platform_init(void)
 {
 	int ret;
+	spin_lock_init(&ox820_lock);
 
 	ret = platform_driver_register(&ox820_gpio_driver);
 	
