@@ -9,6 +9,7 @@ choice
 config OXNAS_VERSION_OX820
 	bool "OX820"
 	select USB_ARCH_HAS_EHCI
+	select ARCH_WANT_OPTIONAL_GPIOLIB
 	help
 	  Support for the OX820 SoC
 
