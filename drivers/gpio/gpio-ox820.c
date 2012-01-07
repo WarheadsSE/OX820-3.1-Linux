@@ -37,7 +37,7 @@
 
 spinlock_t ox820_lock;
 
-#if 1
+#if 0
 #define ox820_printk(x...) printk(x)
 #else
 #define ox820_printk(x...) {}
