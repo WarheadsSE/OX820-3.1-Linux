@@ -29,6 +29,7 @@
 #include <linux/device.h>
 #include <linux/string.h>
 #include <linux/sysdev.h>
+#include <linux/timer.h>
 #include <linux/module.h>
 #include <linux/leds.h>
 #include <linux/ata.h>
@@ -308,7 +309,8 @@ DEFINE_SPINLOCK(async_register_lock);
 ***************************************************************************/
 #ifdef CONFIG_LEDS_TRIGGERS
 static struct led_classdev* ox820_disklight_led = NULL;
-
+static struct timer_list disklight_timer;
+static unsigned long disklight_delay;
 /* directly from drivers/leds/leds.h */
 static inline void led_set_brightness(struct led_classdev *led_cdev,
 					enum led_brightness value)
@@ -330,6 +332,7 @@ static inline void ox820_disklight_led_turn_on(void)
 	struct led_classdev* ox820_disklight = ox820_disklight_led;
 	
 	if(NULL != ox820_disklight) {
+		mod_timer(&disklight_timer, jiffies + disklight_delay);
 		led_set_brightness(ox820_disklight, ox820_disklight->max_brightness);
 	}
 #endif
@@ -337,16 +340,18 @@ static inline void ox820_disklight_led_turn_on(void)
 
 static inline void ox820_disklight_led_turn_off(void)
 {
-#ifdef CONFIG_LEDS_TRIGGERS
+}
+
+#if 1// def CONFIG_LEDS_TRIGGERS
+static void disklight_function(unsigned long data)
+{
 	struct led_classdev* ox820_disklight = ox820_disklight_led;
-	
+
 	if(NULL != ox820_disklight) {
 		led_set_brightness(ox820_disklight, LED_OFF);
 	}
-#endif
 }
 
-#ifdef CONFIG_LEDS_TRIGGERS
 static void ox820_disklight_trig_activate(struct led_classdev* led_cdev)
 {
 	ox820_disklight_led = led_cdev;
@@ -367,7 +372,13 @@ static struct led_trigger ox820_disklight_led_trigger = {
 static int ox820_disklight_led_register(void)
 {
 #ifdef CONFIG_LEDS_TRIGGERS
-	return led_trigger_register(&ox820_disklight_led_trigger);
+	int ret;
+	disklight_delay = msecs_to_jiffies(50);
+	ret = led_trigger_register(&ox820_disklight_led_trigger);
+	if(0 == ret) {
+		setup_timer(&disklight_timer, disklight_function, 0);
+	}
+	return ret;
 #else
 	return 0;
 #endif
@@ -376,6 +387,7 @@ static int ox820_disklight_led_register(void)
 static void ox820_disklight_led_unregister(void)
 {
 #ifdef CONFIG_LEDS_TRIGGERS
+	del_timer_sync(&disklight_timer);
 	led_trigger_unregister(&ox820_disklight_led_trigger);
 #endif
 }
@@ -1004,7 +1016,7 @@ static int __init ox820sata_init_driver( void )
 	if(ports < 1 || ports > 2) {
 		return -EINVAL;
 	}
-    
+	
 	/* check there is enough space for PRD entries in SRAM */
 	if (ATA_PRD_TBL_SZ > OX820SATA_PRD_SIZE) {
 		printk(KERN_ERR"PRD table size is bigger than the space allocated for it in hardware.h");
@@ -1032,16 +1044,16 @@ static int __init ox820sata_init_driver( void )
 			return -EINVAL;
 		}
 	}
-    
+	
 	ret = ox820_disklight_led_register();
-    
+	
 	if(0 == ret) {
 		ret = platform_driver_register( &ox820sata_driver.driver );
 		if(0 != ret) {
 			ox820_disklight_led_unregister();
 		}
 	}
-    
+	
 	if(0 == ret) {
 	++aborted_at;
 		/* reset the core */
@@ -1057,7 +1069,7 @@ static int __init ox820sata_init_driver( void )
 			ox820_disklight_led_unregister();
 		}
 	}
-    
+	
 	if(0 == ret) {
 		printk(KERN_INFO"sata_ox820: Initialized\n");
 	} else {
