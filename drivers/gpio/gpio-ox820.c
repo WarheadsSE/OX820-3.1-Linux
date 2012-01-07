@@ -37,6 +37,12 @@
 
 spinlock_t ox820_lock;
 
+#if 1
+#define ox820_printk(x...) printk(x)
+#else
+#define ox820_printk(x...) {}
+#endif
+
 static inline void ox820_switch_to_gpio(unsigned nr)
 {
 	unsigned long flags;
@@ -44,7 +50,7 @@ static inline void ox820_switch_to_gpio(unsigned nr)
 
 	spin_lock_irqsave(&ox820_lock, flags);
 	
-	if(nr <= SYS_CTRL_NUM_PINS)
+	if(nr < SYS_CTRL_NUM_PINS)
 	{
 		gpio_mask = 1 << nr;
 		writel(readl(SYS_CTRL_SECONDARY_SEL)   & ~(gpio_mask), SYS_CTRL_SECONDARY_SEL);
@@ -70,9 +76,10 @@ static int ox820_gpio_direction_input(struct gpio_chip* gpio, unsigned nr)
 		return -EINVAL;
 	}
 	
+	ox820_printk(KERN_INFO"ox820_gpio.c: switch to input %u\n", nr);
 	ox820_switch_to_gpio(nr);
 
-	if(nr <= SYS_CTRL_NUM_PINS)
+	if(nr < SYS_CTRL_NUM_PINS)
 	{
 		writel(1 << (nr & 31), GPIO_A_OUTPUT_ENABLE_CLEAR);
 	}
@@ -91,10 +98,11 @@ static int ox820_gpio_get(struct gpio_chip* gpio, unsigned nr)
 		return 0;
 	}
 	
-	if(nr <= SYS_CTRL_NUM_PINS) {
+	ox820_printk(KERN_INFO"ox820_gpio.c: read input %u\n", nr);
+	if(nr < SYS_CTRL_NUM_PINS) {
 		return !!(readl(GPIO_A_DATA) & (1 << nr));
 	} else {
-		return !!(readl(GPIO_A_DATA) & (1 << (nr - SYS_CTRL_NUM_PINS)));
+		return !!(readl(GPIO_B_DATA) & (1 << (nr - SYS_CTRL_NUM_PINS)));
 	}
 }
 
@@ -107,10 +115,11 @@ static int ox820_gpio_set_debounce(struct gpio_chip* chip,
 		return -EINVAL;
 	}
 	
+	ox820_printk(KERN_INFO"ox820_gpio.c: set debounce mode for %u = %u\n", nr, debounce);
 	ox820_switch_to_gpio(nr);
 	
 	spin_lock_irqsave(&ox820_lock, flags);
-	if(nr <= SYS_CTRL_NUM_PINS) {
+	if(nr < SYS_CTRL_NUM_PINS) {
 		writel(readl(GPIO_A_INPUT_DEBOUNCE_ENABLE) | (1 << (nr & 31)), GPIO_A_INPUT_DEBOUNCE_ENABLE);
 	}
 	else {
@@ -130,14 +139,30 @@ static int ox820_gpio_direction_output(struct gpio_chip* gpio,
 		return -EINVAL;
 	}
 	
+	ox820_printk(KERN_INFO"ox820_gpio.c: switch to output %u\n", nr);
 	ox820_switch_to_gpio(nr);
 	
-	if(nr <= SYS_CTRL_NUM_PINS) {
+	if(nr < SYS_CTRL_NUM_PINS) {
 		writel(1 << (nr & 31), GPIO_A_OUTPUT_ENABLE_SET);
 	}
 	else {
 		nr -= SYS_CTRL_NUM_PINS;
 		writel(1 << (nr & 31), GPIO_B_OUTPUT_ENABLE_SET);
+	}
+	if(val) {
+		if(nr < SYS_CTRL_NUM_PINS) {
+			writel(1 << (nr & 31), GPIO_A_OUTPUT_SET);
+		} else {
+			nr -= SYS_CTRL_NUM_PINS;
+			writel(1 << (nr & 31), GPIO_B_OUTPUT_SET);
+		}
+	} else {
+		if(nr < SYS_CTRL_NUM_PINS) {
+			writel(1 << (nr & 31), GPIO_A_OUTPUT_CLEAR);
+		} else {
+			nr -= SYS_CTRL_NUM_PINS;
+			writel(1 << (nr & 31), GPIO_B_OUTPUT_CLEAR);
+		}
 	}
 	
 	return 0;
@@ -151,15 +176,16 @@ static void ox820_gpio_set(struct gpio_chip* gpio,
 		return;
 	}
 
+	ox820_printk(KERN_INFO"ox820_gpio.c: set output %u to %u\n", nr, val);
 	if(val) {
-		if(nr <= SYS_CTRL_NUM_PINS) {
+		if(nr < SYS_CTRL_NUM_PINS) {
 			writel(1 << (nr & 31), GPIO_A_OUTPUT_SET);
 		} else {
 			nr -= SYS_CTRL_NUM_PINS;
 			writel(1 << (nr & 31), GPIO_B_OUTPUT_SET);
 		}
 	} else {
-		if(nr <= SYS_CTRL_NUM_PINS) {
+		if(nr < SYS_CTRL_NUM_PINS) {
 			writel(1 << (nr & 31), GPIO_A_OUTPUT_CLEAR);
 		} else {
 			nr -= SYS_CTRL_NUM_PINS;
