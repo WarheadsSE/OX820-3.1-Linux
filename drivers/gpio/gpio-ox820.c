@@ -184,21 +184,14 @@ static struct gpio_chip ox820_gpio = {
 
 static int __devinit ox820_gpio_probe(struct platform_device* pdev)
 {
-	int ret;
-	
-	/* disable interrupts for now */
-	writel(0, GPIO_A_INTERRUPT_ENABLE);
-	writel(0, GPIO_B_INTERRUPT_ENABLE);
-	
-	ret = gpiochip_add(&ox820_gpio);
+	int ret = 0;
 	
 	return ret;
 }
 
 static int __devexit ox820_gpio_remove(struct platform_device* pdev)
 {
-	int ret;
-	ret = gpiochip_remove(&ox820_gpio);
+	int ret = 0;
 	return ret;
 }
 
@@ -216,9 +209,20 @@ static int __init ox820_gpio_platform_init(void)
 	spin_lock_init(&ox820_lock);
 
 	ret = platform_driver_register(&ox820_gpio_driver);
-	
-	if(0 == ret)
-	{
+	if(0 == ret) {
+		/* disable interrupts for now */
+		writel(0, GPIO_A_INTERRUPT_ENABLE);
+		writel(0, GPIO_B_INTERRUPT_ENABLE);
+		
+		ret = gpiochip_add(&ox820_gpio);
+		if(0 != ret) {
+			platform_driver_unregister(&ox820_gpio_driver);
+		}
+	}
+	if(0 != ret) {
+		printk(KERN_ERR"ox820_gpio: initialization result %u\n", ret);
+	} else {	
+		printk(KERN_INFO"ox820_gpio: initialized\n");
 	}
 	
 	return ret;
@@ -226,6 +230,7 @@ static int __init ox820_gpio_platform_init(void)
 
 static void __exit ox820_gpio_platform_exit(void)
 {
+	gpiochip_remove(&ox820_gpio);
 	platform_driver_unregister(&ox820_gpio_driver);
 }
 
