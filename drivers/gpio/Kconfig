@@ -331,7 +331,7 @@ config GPIO_WM8994
 	  CODECs from Wolfson Microelectronics.
 
 config GPIO_OX820
-	bool "OX820 GPIOs"
+	tristate "OX820 GPIOs"
 	depends on ARCH_OX820
 	help
 	  Say yes here to access the GPIO signals of OX820

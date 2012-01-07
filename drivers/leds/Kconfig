@@ -24,6 +24,13 @@ config LEDS_CLASS
 
 comment "LED drivers"
 
+config LEDS_OX820_STG212
+    tristate "LED Support for Medion NAS"
+    depends on LEDS_CLASS
+    depends on GPIO_OX820
+    help
+        This option enables support for LEDs on Medion NAS
+
 config LEDS_88PM860X
 	tristate "LED Support for Marvell 88PM860x PMIC"
 	depends on LEDS_CLASS
