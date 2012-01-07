@@ -342,7 +342,7 @@ static inline void ox820_disklight_led_turn_off(void)
 {
 }
 
-#if 1// def CONFIG_LEDS_TRIGGERS
+#ifdef CONFIG_LEDS_TRIGGERS
 static void disklight_function(unsigned long data)
 {
 	struct led_classdev* ox820_disklight = ox820_disklight_led;
