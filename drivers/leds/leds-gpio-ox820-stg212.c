@@ -32,7 +32,7 @@
 #include <linux/pm_runtime.h>
 #include <mach/hardware.h>
 
-#if 0
+#if 1
 #define ox820_printk(x...) printk(x)
 #else
 #define ox820_printk(x...) {}
@@ -85,6 +85,14 @@ static struct ox820_gpio_led ox820_leds[] = {
 			.brightness_set = ox820_gpioleds_set
 		},
 		.gpio = 40,
+		.active_low = 1
+	},
+	{
+		.led = {
+			.name = "buzzer",
+			.brightness_set = ox820_gpioleds_set
+		},
+		.gpio = 47,
 		.active_low = 1
 	}
 };
