@@ -48,6 +48,10 @@
 #include <asm/system.h>
 #include <asm/unaligned.h>
 
+#if defined(CONFIG_USB_EHCI_OXNAS)
+#include <mach/ehci-oxnas.h>
+#endif
+
 /*-------------------------------------------------------------------------*/
 
 /*
@@ -262,6 +266,23 @@ static void tdi_reset (struct ehci_hcd *ehci)
 	if (ehci_big_endian_mmio(ehci))
 		tmp |= USBMODE_BE;
 	ehci_writel(ehci, tmp, reg_ptr);
+	
+#if defined(CONFIG_USB_EHCI_OXNAS)
+	{
+		struct oxnas_ehci_regs* ox_ehci_regs = (struct oxnas_ehci_regs*)ehci->regs;
+		reg_ptr = (u32 __iomem *)&ox_ehci_regs->txfilltuning;
+		tmp = ehci_readl(ehci, reg_ptr);
+		tmp &= ~0x00ff0000;
+		tmp |= 0x003f0000; /* set burst pre load count to 0x40 (63 * 4 bytes)  */
+		tmp |= 0x16; /* set sheduler overhead to 22 * 1.267us (HS) or 22 * 6.33us (FS/LS)*/
+		ehci_writel(ehci, tmp, reg_ptr);
+
+		reg_ptr = (u32 __iomem *)&ox_ehci_regs->txttfilltuning;
+		tmp = readl (reg_ptr);
+		tmp |= 0x2; /* set sheduler overhead to 2 * 6.333us */
+		writel (tmp, reg_ptr);
+	}
+#endif // CONFIG_ARCH_OX820
 }
 
 /* reset a non-running (STS_HALT == 1) controller */
@@ -1181,9 +1202,11 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER		ehci_oxnas_driver
 #endif
 
+#ifndef CONFIG_USB_EHCI_OXNAS
 #ifdef CONFIG_PCI
 #include "ehci-pci.c"
 #define	PCI_DRIVER		ehci_pci_driver
+#endif
 #endif
 
 #ifdef CONFIG_USB_EHCI_FSL
@@ -1335,10 +1358,12 @@ static int __init ehci_hcd_init(void)
 		goto clean0;
 #endif
 
+#ifndef CONFIG_USB_EHCI_OXNAS
 #ifdef PCI_DRIVER
 	retval = pci_register_driver(&PCI_DRIVER);
 	if (retval < 0)
 		goto clean1;
+#endif
 #endif
 
 #ifdef PS3_SYSTEM_BUS_DRIVER
@@ -1372,9 +1397,11 @@ clean3:
 	ps3_ehci_driver_unregister(&PS3_SYSTEM_BUS_DRIVER);
 clean2:
 #endif
+#ifndef CONFIG_USB_EHCI_OXNAS
 #ifdef PCI_DRIVER
 	pci_unregister_driver(&PCI_DRIVER);
 clean1:
+#endif
 #endif
 #ifdef PLATFORM_DRIVER
 	platform_driver_unregister(&PLATFORM_DRIVER);
@@ -1401,8 +1428,10 @@ static void __exit ehci_hcd_cleanup(void)
 #ifdef PLATFORM_DRIVER
 	platform_driver_unregister(&PLATFORM_DRIVER);
 #endif
+#ifndef CONFIG_USB_EHCI_OXNAS
 #ifdef PCI_DRIVER
 	pci_unregister_driver(&PCI_DRIVER);
+#endif
 #endif
 #ifdef PS3_SYSTEM_BUS_DRIVER
 	ps3_ehci_driver_unregister(&PS3_SYSTEM_BUS_DRIVER);
