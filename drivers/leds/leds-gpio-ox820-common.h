@@ -43,6 +43,7 @@ struct ox820_gpio_led {
 	unsigned gpio;
 	u8 active_low;
 	u8 delayed_switch_to_output;
+    u8 no_pwm;
 };
 
 static void ox820_gpioleds_set(struct led_classdev* led_cdev,

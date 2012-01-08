@@ -19,6 +19,29 @@
  * OX820
  */
 
+static void ox820_program_pwm(struct ox820_gpio_led* led_dat, 
+						unsigned brightness)
+{
+	if(led_dat->active_low) {
+		brightness = 255 - brightness;
+		if(led_dat->gpio < SYS_CTRL_NUM_PINS) {
+			writel(brightness, GPIO_A_PWM_VALUE_0 + led_dat->gpio * 8);
+			writel(0, GPIO_A_RR_0 + led_dat->gpio * 8);
+		} else {
+			writel(brightness, GPIO_B_PWM_VALUE_0 + (led_dat->gpio - SYS_CTRL_NUM_PINS) * 8);
+			writel(0, GPIO_B_RR_0 + (led_dat->gpio - SYS_CTRL_NUM_PINS) * 8);
+		}
+	} else {
+		if(led_dat->gpio < SYS_CTRL_NUM_PINS) {
+			writel(brightness, GPIO_A_PWM_VALUE_0 + led_dat->gpio * 8);
+			writel(0, GPIO_A_RR_0 + led_dat->gpio * 8);
+		} else {
+			writel(brightness, GPIO_B_PWM_VALUE_0 + (led_dat->gpio - SYS_CTRL_NUM_PINS) * 8);
+			writel(0, GPIO_B_RR_0 + (led_dat->gpio - SYS_CTRL_NUM_PINS) * 8);
+		}
+	}
+}
+
 static void ox820_gpioleds_set(struct led_classdev* led_cdev,
 						enum led_brightness value)
 {
@@ -30,6 +53,9 @@ static void ox820_gpioleds_set(struct led_classdev* led_cdev,
 	} else {
 		level = 1;
 	}
+	if(value > 255) {
+		value = 255;
+	}
 	if(led_dat->active_low) {
 		level = !level;
 	}
@@ -39,7 +65,11 @@ static void ox820_gpioleds_set(struct led_classdev* led_cdev,
 		led_dat->delayed_switch_to_output = 0;
 	}
 	
-	gpio_set_value(led_dat->gpio, level);
+	if(led_dat->no_pwm) {
+		gpio_set_value(led_dat->gpio, level);
+	} else {
+		ox820_program_pwm(led_dat, value);
+	}
 }
 
 static int __devinit ox820_gpioleds_probe(struct platform_device* pdev)
@@ -98,6 +128,8 @@ static int __init ox820_gpioleds_platform_init(void)
 					ret = gpio_direction_output(ox820_leds[idx].gpio, ox820_leds[idx].active_low);
 					if(0 != ret) {
 						gpio_free(ox820_leds[idx].gpio);
+					} else if(!ox820_leds[idx].no_pwm) {
+						ox820_program_pwm(&ox820_leds[idx], 0);
 					}
 				}
 			}
@@ -149,6 +181,7 @@ static void __exit ox820_gpioleds_platform_exit(void)
 {
 	int idx;
 	for(idx = 0; idx < sizeof(ox820_leds) / sizeof(ox820_leds[0]); ++idx) {
+		gpio_direction_input(ox820_leds[idx].gpio);
 		led_classdev_unregister(&ox820_leds[idx].led);
 		gpio_free(ox820_leds[idx].gpio);
 	}

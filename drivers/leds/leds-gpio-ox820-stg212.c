@@ -59,7 +59,8 @@ static struct ox820_gpio_led ox820_leds[] = {
 		},
 		.gpio = 47,
 		.active_low = 1,
-		.delayed_switch_to_output = 1
+		.delayed_switch_to_output = 1,
+        .no_pwm = 1
 	}
 #endif
 };
