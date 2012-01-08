@@ -186,6 +186,17 @@ static void ehci_clear_tt_buffer(struct ehci_hcd *ehci, struct ehci_qh *qh,
 			/* REVISIT ARC-derived cores don't clear the root
 			 * hub TT buffer in this way...
 			 */
+#if defined(CONFIG_USB_EHCI_OXNAS)
+			struct oxnas_ehci_regs* ox_ehci_regs = (struct oxnas_ehci_regs*)ehci->regs;
+#ifdef DEBUG
+			struct usb_device *tt = urb->dev->tt->hub;
+			dev_dbg(&tt->dev,
+				"clear tt in root hub \n");
+#endif /* DEBUG */
+			if (ox_ehci_regs->ttctrl & OXNAS_TT_CONTROL_TTAS){
+				ox_ehci_regs->ttctrl |= OXNAS_TT_CONTROL_TTAC;
+			}
+#endif
 		}
 	}
 }
@@ -1223,6 +1234,17 @@ static void start_unlink_async (struct ehci_hcd *ehci, struct ehci_qh *qh)
 		return;
 	}
 
+
+#if defined(CONFIG_USB_EHCI_OXNAS)
+	{
+		struct oxnas_ehci_regs* ox_ehci_regs = (struct oxnas_ehci_regs*)ehci->regs;
+		/* local TT in use for this qh ? */ 
+		if (qh->hw->hw_info2 == 0 && ox_ehci_regs->ttctrl & OXNAS_TT_CONTROL_TTAS) {
+			ox_ehci_regs->ttctrl |= OXNAS_TT_CONTROL_TTAC;
+		}
+	}
+#endif
+	
 	qh->qh_state = QH_STATE_UNLINK;
 	ehci->reclaim = qh = qh_get (qh);
 

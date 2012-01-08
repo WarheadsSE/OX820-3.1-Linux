@@ -256,9 +256,12 @@ static int start_oxnas_usb_ehci(struct platform_device *dev)
 
 static int ehci_oxnas_setup(struct usb_hcd *hcd)
 {
-	struct ehci_hcd	*ehci = hcd_to_ehci(hcd);
+	struct ehci_hcd	*ehci;
 	int temp;
 	int retval;
+	
+	hcd->has_tt = 1;
+	ehci = hcd_to_ehci(hcd);
 
 	ehci->caps = hcd->regs;
 	ehci->regs = hcd->regs + HC_LENGTH(ehci, readl(&ehci->caps->hc_capbase));
