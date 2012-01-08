@@ -44,6 +44,7 @@ obj-$(CONFIG_LEDS_NS2)			+= leds-ns2.o
 obj-$(CONFIG_LEDS_NETXBIG)		+= leds-netxbig.o
 obj-$(CONFIG_LEDS_ASIC3)		+= leds-asic3.o
 obj-$(CONFIG_LEDS_OX820_STG212) += leds-gpio-ox820-stg212.o
+obj-$(CONFIG_LEDS_OX820_HMNDCE) += leds-gpio-ox820-hmndce.o
 
 # LED SPI Drivers
 obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o

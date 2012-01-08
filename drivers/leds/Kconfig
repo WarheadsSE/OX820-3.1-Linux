@@ -37,6 +37,13 @@ config LEDS_OX820_STG212_BUZZER
     help
         This option enables support for Buzzer as LED class
 
+config LEDS_OX820_HMNDCE
+    tristate "LED Support for Home Media Network Drive CE"
+    depends on LEDS_CLASS
+    depends on GPIO_OX820
+    help
+        This option enables support for LEDs on Home Media Network Drive Ce
+        
 config LEDS_88PM860X
 	tristate "LED Support for Marvell 88PM860x PMIC"
 	depends on LEDS_CLASS
