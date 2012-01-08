@@ -42,7 +42,14 @@ config LEDS_OX820_HMNDCE
     depends on LEDS_CLASS
     depends on GPIO_OX820
     help
-        This option enables support for LEDs on Home Media Network Drive Ce
+        This option enables support for LEDs on Home Media Network Drive CE
+        
+config LEDS_OX820_POGOPLUGPRO
+    tristate "LED Support for PogoPlug/Pro"
+    depends on LEDS_CLASS
+    depends on GPIO_OX820
+    help
+        This option enables support for LEDs on PogoPlugPro
         
 config LEDS_88PM860X
 	tristate "LED Support for Marvell 88PM860x PMIC"
