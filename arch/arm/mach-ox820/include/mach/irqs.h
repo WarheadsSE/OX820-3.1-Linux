@@ -81,7 +81,7 @@
 #define RPS_USBDEV_INTERRUPT		(OX820_RPS_IRQ_START + 30)
 
 #define OX820_GIC_IRQ_START  32
-#define NR_GIC_IRQS (OX820_GIC_IRQ_START + 32)
+#define NR_GIC_IRQS (OX820_GIC_IRQ_START + 32) /* looks weird to me */
 
 /* The per CPU timer interrupt */
 #define IRQ_LOCALTIMER            (29)
@@ -116,7 +116,10 @@
 #define SD_INTERRUPT				(OX820_GIC_IRQ_START + 29)
 #define USBDEV_INTERRUPT			(OX820_GIC_IRQ_START + 30)
 
+#define OX820_GPIO_IRQ_START 96
+#define NR_GPIO_IRQS 50
+
 /* Definitions for the ARM11's GIC IRQ controller */ 
-#define NR_IRQS (NR_GIC_IRQS + NR_RPS_IRQS) /* 96 RPS*/
+#define NR_IRQS (NR_GPIO_IRQS + NR_GIC_IRQS + NR_RPS_IRQS) /* 96 RPS + 50 for GPIO stuff */
 
 #endif // __ASM_ARCH_IRQ_H

@@ -34,13 +34,178 @@
 #include <linux/slab.h>
 #include <linux/pm_runtime.h>
 #include <mach/hardware.h>
+#include <mach/irqs.h>
+#include <asm/hw_irq.h>
 
 extern spinlock_t oxnas_gpio_spinlock;
 
-#if 0
+#if 1
 #define ox820_printk(x...) printk(x)
 #else
 #define ox820_printk(x...) {}
+#endif
+
+#ifdef CONFIG_GPIO_OX820_USE_IRQ
+int ox820_gpioa_irq_base = OX820_GPIO_IRQ_START;
+int ox820_gpiob_irq_base = OX820_GPIO_IRQ_START + 32;
+
+static irqreturn_t ox820_gpioa_irq_handler(int irq, void* dev_id)
+{
+	unsigned irqidx;
+	unsigned long irq_event = readl(GPIO_A_INTERRUPT_EVENT);
+	writel(irq_event, GPIO_A_INTERRUPT_EVENT);
+	for(irqidx = 0; irqidx < 32; ++irqidx) {
+		if(irq_event & (1UL << irqidx)) {
+			generic_handle_irq(ox820_gpioa_irq_base + irqidx);
+		}
+	}
+	
+	return IRQ_HANDLED;
+}
+
+static void ox820_gpioa_irq_mask(struct irq_data* d)
+{
+	unsigned long flags;
+	int irqno = d->irq - ox820_gpioa_irq_base;
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	
+	writel(readl(GPIO_A_INTERRUPT_ENABLE) & ~(1UL << (irqno)), GPIO_A_INTERRUPT_ENABLE);
+	writel(1UL << (d->irq), GPIO_A_INTERRUPT_EVENT);
+	
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+}
+
+static void ox820_gpioa_irq_unmask(struct irq_data* d)
+{
+	unsigned long flags;
+	int irqno = d->irq - ox820_gpioa_irq_base;
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	
+	writel(readl(GPIO_A_INTERRUPT_ENABLE) | (1UL << (irqno)), GPIO_A_INTERRUPT_ENABLE);
+	
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+}
+
+static int ox820_gpioa_irq_set_type(struct irq_data* d, unsigned int type)
+{
+	unsigned long flags;
+	int irqno = d->irq - ox820_gpioa_irq_base;
+	if((type & IRQ_TYPE_EDGE_BOTH) && (type & IRQ_TYPE_LEVEL_MASK)) {
+		printk("ox820_gpio: gpioa irq %d: unsupported type %d\n",
+				d->irq, type);
+		return -EINVAL;
+	}
+
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	
+	if((IRQ_TYPE_EDGE_RISING & type) || (IRQ_TYPE_LEVEL_HIGH & type)) {
+		writel(readl(GPIO_A_RISING_EDGE_ACTIVE_HIGH_ENABLE) | (1UL << (irqno)), GPIO_A_RISING_EDGE_ACTIVE_HIGH_ENABLE);
+	} else {
+		writel(readl(GPIO_A_RISING_EDGE_ACTIVE_HIGH_ENABLE) & ~(1UL << (irqno)), GPIO_A_RISING_EDGE_ACTIVE_HIGH_ENABLE);
+	}
+	
+	if((IRQ_TYPE_EDGE_FALLING & type) || (IRQ_TYPE_LEVEL_LOW & type)) {
+		writel(readl(GPIO_A_FALLING_EDGE_ACTIVE_LOW_ENABLE) | (1UL << (irqno)), GPIO_A_RISING_EDGE_ACTIVE_HIGH_ENABLE);
+	} else {
+		writel(readl(GPIO_A_FALLING_EDGE_ACTIVE_LOW_ENABLE) & ~(1UL << (irqno)), GPIO_A_RISING_EDGE_ACTIVE_HIGH_ENABLE);
+	}
+	
+	if(IRQ_TYPE_LEVEL_MASK & type) {
+		writel(readl(GPIO_A_LEVEL_INTERRUPT_ENABLE) | (1UL << (irqno)), GPIO_A_LEVEL_INTERRUPT_ENABLE);
+	} else {
+		writel(readl(GPIO_A_LEVEL_INTERRUPT_ENABLE) & ~(1UL << (irqno)), GPIO_A_LEVEL_INTERRUPT_ENABLE);
+	}
+		
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	
+	return 0;
+}
+
+static struct irq_chip gpio_a_irq_chip = {
+	.name = "gpioa_irq",
+	.irq_mask = ox820_gpioa_irq_mask,
+	.irq_unmask = ox820_gpioa_irq_unmask,
+	.irq_set_type = ox820_gpioa_irq_set_type
+};
+
+static irqreturn_t ox820_gpiob_irq_handler(int irq, void* dev_id)
+{
+	unsigned irqidx;
+	unsigned long irq_event = readl(GPIO_B_INTERRUPT_EVENT);
+	writel(irq_event, GPIO_B_INTERRUPT_EVENT);
+	for(irqidx = 0; irqidx < 32; ++irqidx) {
+		if(irq_event & (1UL << irqidx)) {
+			generic_handle_irq(ox820_gpiob_irq_base + irqidx);
+		}
+	}
+	
+	return IRQ_HANDLED;
+}
+
+static void ox820_gpiob_irq_mask(struct irq_data* d)
+{
+	unsigned long flags;
+	int irqno = d->irq - ox820_gpiob_irq_base;
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	
+	writel(readl(GPIO_B_INTERRUPT_ENABLE) & ~(1UL << (irqno)), GPIO_B_INTERRUPT_ENABLE);
+	writel(1UL << (irqno), GPIO_A_INTERRUPT_EVENT);
+	
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+}
+
+static void ox820_gpiob_irq_unmask(struct irq_data* d)
+{
+	unsigned long flags;
+	int irqno = d->irq - ox820_gpiob_irq_base;
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	
+	writel(readl(GPIO_B_INTERRUPT_ENABLE) | (1UL << (irqno)), GPIO_B_INTERRUPT_ENABLE);
+	
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+}
+
+static int ox820_gpiob_irq_set_type(struct irq_data* d, unsigned int type)
+{
+	unsigned long flags;
+	int irqno = d->irq - ox820_gpiob_irq_base;
+	if((type & IRQ_TYPE_EDGE_BOTH) && (type & IRQ_TYPE_LEVEL_MASK)) {
+		printk("ox820_gpio: gpiob irq %d: unsupported type %d\n",
+				d->irq, type);
+		return -EINVAL;
+	}
+
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	
+	if((IRQ_TYPE_EDGE_RISING & type) || (IRQ_TYPE_LEVEL_HIGH & type)) {
+		writel(readl(GPIO_B_RISING_EDGE_ACTIVE_HIGH_ENABLE) | (1 << (irqno)), GPIO_B_RISING_EDGE_ACTIVE_HIGH_ENABLE);
+	} else {
+		writel(readl(GPIO_B_RISING_EDGE_ACTIVE_HIGH_ENABLE) & ~(1 << (irqno)), GPIO_B_RISING_EDGE_ACTIVE_HIGH_ENABLE);
+	}
+	
+	if((IRQ_TYPE_EDGE_FALLING & type) || (IRQ_TYPE_LEVEL_LOW & type)) {
+		writel(readl(GPIO_B_FALLING_EDGE_ACTIVE_LOW_ENABLE) | (1 << (irqno)), GPIO_B_RISING_EDGE_ACTIVE_HIGH_ENABLE);
+	} else {
+		writel(readl(GPIO_B_FALLING_EDGE_ACTIVE_LOW_ENABLE) & ~(1 << (irqno)), GPIO_B_RISING_EDGE_ACTIVE_HIGH_ENABLE);
+	}
+	
+	if(IRQ_TYPE_LEVEL_MASK & type) {
+		writel(readl(GPIO_B_LEVEL_INTERRUPT_ENABLE) | (1 << (irqno)), GPIO_B_LEVEL_INTERRUPT_ENABLE);
+	} else {
+		writel(readl(GPIO_B_LEVEL_INTERRUPT_ENABLE) & ~(1 << (irqno)), GPIO_B_LEVEL_INTERRUPT_ENABLE);
+	}
+		
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	
+	return 0;
+}
+
+static struct irq_chip gpio_b_irq_chip = {
+	.name = "gpiob_irq",
+	.irq_mask = ox820_gpiob_irq_mask,
+	.irq_unmask = ox820_gpiob_irq_unmask,
+	.irq_set_type = ox820_gpiob_irq_set_type
+};
 #endif
 
 static inline void ox820_switch_to_gpio(unsigned nr)
@@ -194,6 +359,19 @@ static void ox820_gpio_set(struct gpio_chip* gpio,
 	}
 }
 
+#ifdef CONFIG_GPIO_OX820_USE_IRQ
+static int ox820_gpio_to_irq(struct gpio_chip* gpio, unsigned nr) {
+	if(nr >= 50) {
+		return -EINVAL;
+	}
+	if(nr < SYS_CTRL_NUM_PINS) {
+		return ox820_gpioa_irq_base + nr;
+	} else {
+		return ox820_gpiob_irq_base + nr - SYS_CTRL_NUM_PINS;
+	}
+}
+#endif
+
 static struct gpio_chip ox820_gpio = {
 	.label = "ox820_gpio",
 	.dev = NULL,
@@ -203,7 +381,9 @@ static struct gpio_chip ox820_gpio = {
 	.direction_output = ox820_gpio_direction_output,
 	.set_debounce = ox820_gpio_set_debounce,
 	.set = ox820_gpio_set,
-	//.to_irq = ox820_gpio_to_irq,
+#ifdef CONFIG_GPIO_OX820_USE_IRQ
+	.to_irq = ox820_gpio_to_irq,
+#endif
 	.base = 0,
 	.ngpio = 50,
 };
@@ -232,29 +412,85 @@ static struct platform_driver ox820_gpio_driver = {
 static int __init ox820_gpio_platform_init(void)
 {
 	int ret;
+#ifdef CONFIG_GPIO_OX820_USE_IRQ
+	int j;
+#endif
 
 	ret = platform_driver_register(&ox820_gpio_driver);
-	if(0 == ret) {
-		/* disable interrupts for now */
-		writel(0, GPIO_A_INTERRUPT_ENABLE);
-		writel(0, GPIO_B_INTERRUPT_ENABLE);
-		
-		ret = gpiochip_add(&ox820_gpio);
-		if(0 != ret) {
-			platform_driver_unregister(&ox820_gpio_driver);
-		}
-	}
 	if(0 != ret) {
-		printk(KERN_ERR"ox820_gpio: initialization result %u\n", ret);
-	} else {	
-		printk(KERN_INFO"ox820_gpio: initialized\n");
+		goto clean0;
 	}
+	/* disable interrupts for now */
+	writel(0, GPIO_A_INTERRUPT_ENABLE);
+	writel(0, GPIO_B_INTERRUPT_ENABLE);
 	
+#ifdef CONFIG_GPIO_OX820_USE_IRQ
+	ret = request_irq(GPIOA_INTERRUPT, ox820_gpioa_irq_handler, IRQF_SHARED, "ox820-gpioa", &gpio_a_irq_chip);
+	if(0 != ret) {
+		goto clean1;
+	}
+	ret = request_irq(GPIOB_INTERRUPT, ox820_gpiob_irq_handler, IRQF_SHARED, "ox820-gpiob", &gpio_b_irq_chip);
+	if(0 != ret) {
+		goto clean2;
+	}
+#endif
+	ret = gpiochip_add(&ox820_gpio);
+	if(0 != ret) {
+		goto clean3;
+	}
+#ifdef CONFIG_GPIO_OX820_USE_IRQ
+	for(j = ox820_gpioa_irq_base; j < ox820_gpioa_irq_base + 32; ++j) {
+		irq_set_chip(j, &gpio_a_irq_chip);
+		irq_set_handler(j, handle_simple_irq);
+		irq_modify_status(j, IRQ_NOREQUEST, 0);
+	}
+	for(j = ox820_gpiob_irq_base; j < ox820_gpiob_irq_base + 18; ++j) {
+		irq_set_chip(j, &gpio_b_irq_chip);
+		irq_set_handler(j, handle_simple_irq);
+		irq_modify_status(j, IRQ_NOREQUEST, 0);
+	}
+#endif			
+	printk(KERN_INFO"ox820_gpio: initialized\n");
+	
+	return 0;
+	
+clean3:
+#ifdef CONFIG_GPIO_OX820_USE_IRQ
+	free_irq(GPIOB_INTERRUPT, &gpio_b_irq_chip);
+clean2:
+	free_irq(GPIOA_INTERRUPT, &gpio_a_irq_chip);
+clean1:
+#endif
+	platform_driver_unregister(&ox820_gpio_driver);
+clean0:
+	printk(KERN_ERR"ox820_gpio: initialization result %u\n", ret);
 	return ret;
 }
 
 static void __exit ox820_gpio_platform_exit(void)
-{
+{	
+#ifdef CONFIG_GPIO_OX820_USE_IRQ
+	int j;
+#endif
+	
+	/* disable interrupts */
+	writel(0, GPIO_A_INTERRUPT_ENABLE);
+	writel(0, GPIO_B_INTERRUPT_ENABLE);
+
+#ifdef CONFIG_GPIO_OX820_USE_IRQ
+	free_irq(GPIOB_INTERRUPT, &gpio_b_irq_chip);
+	free_irq(GPIOA_INTERRUPT, &gpio_a_irq_chip);
+	
+	for(j = ox820_gpioa_irq_base; j < ox820_gpioa_irq_base + 32; ++j) {
+		irq_modify_status(j, 0, IRQ_NOREQUEST);
+		irq_set_chip(j, NULL);
+	}
+	for(j = ox820_gpiob_irq_base; j < ox820_gpiob_irq_base + 32; ++j) {
+		irq_modify_status(j, 0, IRQ_NOREQUEST);
+		irq_set_chip(j, NULL);
+	}
+#endif
+	
 	gpiochip_remove(&ox820_gpio);
 	platform_driver_unregister(&ox820_gpio_driver);
 }

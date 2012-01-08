@@ -335,6 +335,12 @@ config GPIO_OX820
 	depends on ARCH_OX820
 	help
 	  Say yes here to access the GPIO signals of OX820
+      
+config GPIO_OX820_USE_IRQ
+    bool "OX820 GPIO Irq Support"
+    depends on GPIO_OX820
+    help
+        Enable this to use IRQ support within OX820 GPIO driver
 
 config GPIO_ADP5520
 	tristate "GPIO Support for ADP5520 PMIC"
