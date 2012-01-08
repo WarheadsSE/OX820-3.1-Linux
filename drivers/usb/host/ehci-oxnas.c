@@ -16,16 +16,18 @@
 
 #define rdl(off)	__raw_readl(hcd->regs + (off))
 #define wrl(off, val)	__raw_writel((val), hcd->regs + (off))
-#define USB_FROM_PLLB 1
+
 static int start_oxnas_usb_ehci(struct platform_device *dev)
 {
-    unsigned long input_polarity = 0;
-    unsigned long output_polarity = 0;
+	unsigned long input_polarity = 0;
+	unsigned long output_polarity = 0;
 	unsigned long power_polarity_default=readl(SYS_CTRL_USBHSMPH_CTRL);
 	unsigned usb_hs_ifg;
 
-	if (usb_disabled())
+	if (usb_disabled()) {
+		printk(KERN_INFO "usb is disabled\n");
 		return -ENODEV;
+	}
 
 	/*printk(KERN_INFO "starting usb for 820\n");
 	printk("%s: block sizes: qh %Zd qtd %Zd itd %Zd sitd %Zd\n",
@@ -35,13 +37,13 @@ static int start_oxnas_usb_ehci(struct platform_device *dev)
 
 	printk(KERN_INFO "initialise for OX820 series USB\n");*/
 #ifdef CONFIG_OXNAS_USB_OVERCURRENT_POLARITY_NEGATIVE
-    input_polarity = ((1UL << SYS_CTRL_USBHSMPH_IP_POL_A_BIT) |
-                      (1UL << SYS_CTRL_USBHSMPH_IP_POL_B_BIT));
+	input_polarity = ((1UL << SYS_CTRL_USBHSMPH_IP_POL_A_BIT) |
+					  (1UL << SYS_CTRL_USBHSMPH_IP_POL_B_BIT));
 #endif // CONFIG_OXNAS_USB_OVERCURRENT_POLARITY_NEGATIVE
 
 #ifdef CONFIG_OXNAS_USB_POWER_SWITCH_POLARITY_NEGATIVE
-    output_polarity = ((1UL << SYS_CTRL_USBHSMPH_OP_POL_A_BIT) |
-                       (1UL << SYS_CTRL_USBHSMPH_OP_POL_B_BIT));
+	output_polarity = ((1UL << SYS_CTRL_USBHSMPH_OP_POL_A_BIT) |
+					   (1UL << SYS_CTRL_USBHSMPH_OP_POL_B_BIT));
 #endif // CONFIG_OXNAS_USB_POWER_SWITCH_POLARITY_NEGATIVE
 
 	power_polarity_default &= ~0xf;
@@ -60,61 +62,61 @@ static int start_oxnas_usb_ehci(struct platform_device *dev)
 #ifdef CONFIG_USB_PORTA_POWO_SECONDARY
 	// Select USBA power output from secondary MFP function
 	mask = 1UL << USBA_POWO_SEC_MFP;
-    spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
-    writel(readl(SYS_CTRL_SECONDARY_SEL)   |  mask, SYS_CTRL_SECONDARY_SEL);
-    writel(readl(SYS_CTRL_TERTIARY_SEL)    & ~mask, SYS_CTRL_TERTIARY_SEL);
-    writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
-    writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
-    writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
-    spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	writel(readl(SYS_CTRL_SECONDARY_SEL)   |  mask, SYS_CTRL_SECONDARY_SEL);
+	writel(readl(SYS_CTRL_TERTIARY_SEL)    & ~mask, SYS_CTRL_TERTIARY_SEL);
+	writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
+	writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
+	writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 
-    // Enable output onto USBA power output secondary function
-    writel(mask, GPIO_A_OUTPUT_ENABLE_SET);
+	// Enable output onto USBA power output secondary function
+	writel(mask, GPIO_A_OUTPUT_ENABLE_SET);
 #endif // CONFIG_USB_PORTA_POWO_SECONDARY
 
 #ifdef CONFIG_USB_PORTA_POWO_TERTIARY
 	// Select USBA power output from tertiary MFP function
 	mask = 1UL << (USBA_POWO_TER_MFP - SYS_CTRL_NUM_PINS);
-    spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
-    writel(readl(SEC_CTRL_SECONDARY_SEL)   & ~mask, SEC_CTRL_SECONDARY_SEL);
-    writel(readl(SEC_CTRL_TERTIARY_SEL)    |  mask, SEC_CTRL_TERTIARY_SEL);
-    writel(readl(SEC_CTRL_QUATERNARY_SEL)  & ~mask, SEC_CTRL_QUATERNARY_SEL);
-    writel(readl(SEC_CTRL_DEBUG_SEL)       & ~mask, SEC_CTRL_DEBUG_SEL);
-    writel(readl(SEC_CTRL_ALTERNATIVE_SEL) & ~mask, SEC_CTRL_ALTERNATIVE_SEL);
-    spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	writel(readl(SEC_CTRL_SECONDARY_SEL)   & ~mask, SEC_CTRL_SECONDARY_SEL);
+	writel(readl(SEC_CTRL_TERTIARY_SEL)    |  mask, SEC_CTRL_TERTIARY_SEL);
+	writel(readl(SEC_CTRL_QUATERNARY_SEL)  & ~mask, SEC_CTRL_QUATERNARY_SEL);
+	writel(readl(SEC_CTRL_DEBUG_SEL)       & ~mask, SEC_CTRL_DEBUG_SEL);
+	writel(readl(SEC_CTRL_ALTERNATIVE_SEL) & ~mask, SEC_CTRL_ALTERNATIVE_SEL);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 
-    // Enable output onto USBA power output tertiary function
-    writel(mask, GPIO_B_OUTPUT_ENABLE_SET);
+	// Enable output onto USBA power output tertiary function
+	writel(mask, GPIO_B_OUTPUT_ENABLE_SET);
 #endif // CONFIG_USB_PORTA_POWO_TERTIARY
 
 #ifdef CONFIG_USB_PORTA_OVERI_SECONDARY
 	// Select USBA overcurrent from secondary MFP function
 	mask = 1UL << USBA_OVERI_SEC_MFP;
-    spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
-    writel(readl(SYS_CTRL_SECONDARY_SEL)   |  mask, SYS_CTRL_SECONDARY_SEL);
-    writel(readl(SYS_CTRL_TERTIARY_SEL)    & ~mask, SYS_CTRL_TERTIARY_SEL);
-    writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
-    writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
-    writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
-    spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	writel(readl(SYS_CTRL_SECONDARY_SEL)   |  mask, SYS_CTRL_SECONDARY_SEL);
+	writel(readl(SYS_CTRL_TERTIARY_SEL)    & ~mask, SYS_CTRL_TERTIARY_SEL);
+	writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
+	writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
+	writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 
-    // Enable input from USBA secondary overcurrent function
-    writel(mask, GPIO_A_OUTPUT_ENABLE_CLEAR);
+	// Enable input from USBA secondary overcurrent function
+	writel(mask, GPIO_A_OUTPUT_ENABLE_CLEAR);
 #endif // CONFIG_USB_PORTA_OVERI_SECONDARY
 
 #ifdef CONFIG_USB_PORTA_OVERI_TERTIARY
 	// Select USBA overcurrent from tertiary MFP function
 	mask = 1UL << (USBA_OVERI_TER_MFP - SYS_CTRL_NUM_PINS);
-    spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
-    writel(readl(SEC_CTRL_SECONDARY_SEL)   & ~mask, SEC_CTRL_SECONDARY_SEL);
-    writel(readl(SEC_CTRL_TERTIARY_SEL)    |  mask, SEC_CTRL_TERTIARY_SEL);
-    writel(readl(SEC_CTRL_QUATERNARY_SEL)  & ~mask, SEC_CTRL_QUATERNARY_SEL);
-    writel(readl(SEC_CTRL_DEBUG_SEL)       & ~mask, SEC_CTRL_DEBUG_SEL);
-    writel(readl(SEC_CTRL_ALTERNATIVE_SEL) & ~mask, SEC_CTRL_ALTERNATIVE_SEL);
-    spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	writel(readl(SEC_CTRL_SECONDARY_SEL)   & ~mask, SEC_CTRL_SECONDARY_SEL);
+	writel(readl(SEC_CTRL_TERTIARY_SEL)    |  mask, SEC_CTRL_TERTIARY_SEL);
+	writel(readl(SEC_CTRL_QUATERNARY_SEL)  & ~mask, SEC_CTRL_QUATERNARY_SEL);
+	writel(readl(SEC_CTRL_DEBUG_SEL)       & ~mask, SEC_CTRL_DEBUG_SEL);
+	writel(readl(SEC_CTRL_ALTERNATIVE_SEL) & ~mask, SEC_CTRL_ALTERNATIVE_SEL);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 
-    // Enable input from USBA tertiary overcurrent function
-    writel(mask, GPIO_B_OUTPUT_ENABLE_CLEAR);
+	// Enable input from USBA tertiary overcurrent function
+	writel(mask, GPIO_B_OUTPUT_ENABLE_CLEAR);
 #endif // CONFIG_USB_PORTA_OVERI_TERTIARY
 
 #endif // CONFIG_OXNAS_USB_PORTA_POWER_CONTROL
@@ -124,120 +126,130 @@ static int start_oxnas_usb_ehci(struct platform_device *dev)
 #ifdef CONFIG_USB_PORTB_POWO_SECONDARY
 	// Select USBB power output from secondary MFP function
 	mask = 1UL << USBB_POWO_SEC_MFP;
-    spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
-    writel(readl(SYS_CTRL_SECONDARY_SEL)   |  mask, SYS_CTRL_SECONDARY_SEL);
-    writel(readl(SYS_CTRL_TERTIARY_SEL)    & ~mask, SYS_CTRL_TERTIARY_SEL);
-    writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
-    writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
-    writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
-    spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	writel(readl(SYS_CTRL_SECONDARY_SEL)   |  mask, SYS_CTRL_SECONDARY_SEL);
+	writel(readl(SYS_CTRL_TERTIARY_SEL)    & ~mask, SYS_CTRL_TERTIARY_SEL);
+	writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
+	writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
+	writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 
-    // Enable output onto USBB power output secondary function
-    writel(mask, GPIO_A_OUTPUT_ENABLE_SET);
+	// Enable output onto USBB power output secondary function
+	writel(mask, GPIO_A_OUTPUT_ENABLE_SET);
 #endif // CONFIG_USB_PORTB_POWO_SECONDARY
 
 #ifdef CONFIG_USB_PORTB_POWO_TERTIARY
 	// Select USBB power output from tertiary MFP function
 	mask = 1UL << USBB_POWO_TER_MFP;
-    spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
-    writel(readl(SYS_CTRL_SECONDARY_SEL)   & ~mask, SYS_CTRL_SECONDARY_SEL);
-    writel(readl(SYS_CTRL_TERTIARY_SEL)    |  mask, SYS_CTRL_TERTIARY_SEL);
-    writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
-    writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
-    writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
-    spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	writel(readl(SYS_CTRL_SECONDARY_SEL)   & ~mask, SYS_CTRL_SECONDARY_SEL);
+	writel(readl(SYS_CTRL_TERTIARY_SEL)    |  mask, SYS_CTRL_TERTIARY_SEL);
+	writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
+	writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
+	writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 
-    // Enable output onto USBB power output tertiary function
-    writel(mask, GPIO_A_OUTPUT_ENABLE_SET);
+	// Enable output onto USBB power output tertiary function
+	writel(mask, GPIO_A_OUTPUT_ENABLE_SET);
 #endif // CONFIG_USB_PORTB_POWO_TERTIARY
 
 #ifdef CONFIG_USB_PORTB_OVERI_SECONDARY
 	// Select USBB overcurrent from secondary MFP function
 	mask = 1UL << USBB_OVERI_SEC_MFP;
-    spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
-    writel(readl(SYS_CTRL_SECONDARY_SEL)   |  mask, SYS_CTRL_SECONDARY_SEL);
-    writel(readl(SYS_CTRL_TERTIARY_SEL)    & ~mask, SYS_CTRL_TERTIARY_SEL);
-    writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
-    writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
-    writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
-    spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	writel(readl(SYS_CTRL_SECONDARY_SEL)   |  mask, SYS_CTRL_SECONDARY_SEL);
+	writel(readl(SYS_CTRL_TERTIARY_SEL)    & ~mask, SYS_CTRL_TERTIARY_SEL);
+	writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
+	writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
+	writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 
-    // Enable input from USBB secondary overcurrent function
-    writel(mask, GPIO_A_OUTPUT_ENABLE_CLEAR);
+	// Enable input from USBB secondary overcurrent function
+	writel(mask, GPIO_A_OUTPUT_ENABLE_CLEAR);
 #endif // CONFIG_USB_PORTB_OVERI_SECONDARY
 
 #ifdef CONFIG_USB_PORTB_OVERI_TERTIARY
 	// Select USBB overcurrent from tertiary MFP function
 	mask = 1UL << USBB_OVERI_TER_MFP;
-    spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
-    writel(readl(SYS_CTRL_SECONDARY_SEL)   & ~mask, SYS_CTRL_SECONDARY_SEL);
-    writel(readl(SYS_CTRL_TERTIARY_SEL)    |  mask, SYS_CTRL_TERTIARY_SEL);
-    writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
-    writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
-    writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
-    spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
+	writel(readl(SYS_CTRL_SECONDARY_SEL)   & ~mask, SYS_CTRL_SECONDARY_SEL);
+	writel(readl(SYS_CTRL_TERTIARY_SEL)    |  mask, SYS_CTRL_TERTIARY_SEL);
+	writel(readl(SYS_CTRL_QUATERNARY_SEL)  & ~mask, SYS_CTRL_QUATERNARY_SEL);
+	writel(readl(SYS_CTRL_DEBUG_SEL)       & ~mask, SYS_CTRL_DEBUG_SEL);
+	writel(readl(SYS_CTRL_ALTERNATIVE_SEL) & ~mask, SYS_CTRL_ALTERNATIVE_SEL);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 
-    // Enable input from USBB tertiary overcurrent function
-    writel(mask, GPIO_A_OUTPUT_ENABLE_CLEAR);
+	// Enable input from USBB tertiary overcurrent function
+	writel(mask, GPIO_A_OUTPUT_ENABLE_CLEAR);
 #endif // CONFIG_USB_PORTB_OVERI_TERTIARY
 
 #endif // CONFIG_OXNAS_USB_PORTB_POWER_CONTROL
 
-    // turn on internal 12MHz clock for OX820 architecture USB
+	// turn on internal 12MHz clock for OX820 architecture USB
 
-    writel(1<<SYS_CTRL_CKEN_REF600_BIT, SYS_CTRL_CKEN_SET_CTRL);
-    writel(1<<SYS_CTRL_RSTEN_PLLB_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
+	writel(1<<SYS_CTRL_CKEN_REF600_BIT, SYS_CTRL_CKEN_SET_CTRL);
+	writel(1<<SYS_CTRL_RSTEN_PLLB_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
 
-#ifdef USB_FROM_PLLB
-    
-    writel((readl(SYS_CTRL_SECONDARY_SEL) | (1UL<<9)), SYS_CTRL_SECONDARY_SEL); /* enable monitor output  mf_a9 */
-    writel( (1 << PLLB_ENSAT) | (1 << PLLB_OUTDIV) | (2<<PLLB_REFDIV), SEC_CTRL_PLLB_CTRL0); /*  */
-    writel( (50 << USB_REF_600_DIVIDER), SEC_CTRL_PLLB_DIV_CTRL);  // 600MHz pllb divider for 12MHz
+#ifdef CONFIG_USB_OX820_FROM_PLLB
+	
+	writel((readl(SYS_CTRL_SECONDARY_SEL) | (1UL<<9)), SYS_CTRL_SECONDARY_SEL); /* enable monitor output  mf_a9 */
+	writel( (1 << PLLB_ENSAT) | (1 << PLLB_OUTDIV) | (2<<PLLB_REFDIV), SEC_CTRL_PLLB_CTRL0); /*  */
+	writel( (50 << USB_REF_600_DIVIDER), SEC_CTRL_PLLB_DIV_CTRL);  // 600MHz pllb divider for 12MHz
 #endif	   
-    
-    writel((25 << USB_REF_300_DIVIDER), SYS_CTRL_REF300_DIV); // ref 300 divider for 12MHz
+	
+	writel((25 << USB_REF_300_DIVIDER), SYS_CTRL_REF300_DIV); // ref 300 divider for 12MHz
  
-    
-    // Ensure the USB block is properly reset
-    writel(1UL << SYS_CTRL_RSTEN_USBHS_BIT, SYS_CTRL_RSTEN_SET_CTRL);
-    wmb();
-    writel(1UL << SYS_CTRL_RSTEN_USBHS_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
-    writel(1UL << SYS_CTRL_RSTEN_USBPHYA_BIT, SYS_CTRL_RSTEN_SET_CTRL);
-    wmb();
-    writel(1UL << SYS_CTRL_RSTEN_USBPHYA_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
-    writel(1UL << SYS_CTRL_RSTEN_USBPHYB_BIT, SYS_CTRL_RSTEN_SET_CTRL);
-    wmb();
-    writel(1UL << SYS_CTRL_RSTEN_USBPHYB_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
+	
+	// Ensure the USB block is properly reset
+	writel(1UL << SYS_CTRL_RSTEN_USBHS_BIT, SYS_CTRL_RSTEN_SET_CTRL);
+	wmb();
+	writel(1UL << SYS_CTRL_RSTEN_USBHS_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
+	writel(1UL << SYS_CTRL_RSTEN_USBPHYA_BIT, SYS_CTRL_RSTEN_SET_CTRL);
+	wmb();
+	writel(1UL << SYS_CTRL_RSTEN_USBPHYA_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
+	writel(1UL << SYS_CTRL_RSTEN_USBPHYB_BIT, SYS_CTRL_RSTEN_SET_CTRL);
+	wmb();
+	writel(1UL << SYS_CTRL_RSTEN_USBPHYB_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
 
-    // Force the high speed clock to be generated all the time, via serial
-    // programming of the USB HS PHY
-    writel((2UL << SYS_CTRL_USBHSPHY_TEST_ADD) |
-           (0xe0UL << SYS_CTRL_USBHSPHY_TEST_DIN), SYS_CTRL_USBHSPHY_CTRL);
+	// Force the high speed clock to be generated all the time, via serial
+	// programming of the USB HS PHY
+	writel((2UL << SYS_CTRL_USBHSPHY_TEST_ADD) |
+		   (0xe0UL << SYS_CTRL_USBHSPHY_TEST_DIN), SYS_CTRL_USBHSPHY_CTRL);
 
-    writel((1UL << SYS_CTRL_USBHSPHY_TEST_CLK) |
-           (2UL << SYS_CTRL_USBHSPHY_TEST_ADD) |
-           (0xe0UL << SYS_CTRL_USBHSPHY_TEST_DIN), SYS_CTRL_USBHSPHY_CTRL);
+	writel((1UL << SYS_CTRL_USBHSPHY_TEST_CLK) |
+		   (2UL << SYS_CTRL_USBHSPHY_TEST_ADD) |
+		   (0xe0UL << SYS_CTRL_USBHSPHY_TEST_DIN), SYS_CTRL_USBHSPHY_CTRL);
 
-    writel((0xfUL << SYS_CTRL_USBHSPHY_TEST_ADD) | 
-           (0xaaUL << SYS_CTRL_USBHSPHY_TEST_DIN), SYS_CTRL_USBHSPHY_CTRL);
+	writel((0xfUL << SYS_CTRL_USBHSPHY_TEST_ADD) | 
+		   (0xaaUL << SYS_CTRL_USBHSPHY_TEST_DIN), SYS_CTRL_USBHSPHY_CTRL);
 
-    writel((1UL << SYS_CTRL_USBHSPHY_TEST_CLK) |
-           (0xfUL << SYS_CTRL_USBHSPHY_TEST_ADD) |
-           (0xaaUL << SYS_CTRL_USBHSPHY_TEST_DIN), SYS_CTRL_USBHSPHY_CTRL);
+	writel((1UL << SYS_CTRL_USBHSPHY_TEST_CLK) |
+		   (0xfUL << SYS_CTRL_USBHSPHY_TEST_ADD) |
+		   (0xaaUL << SYS_CTRL_USBHSPHY_TEST_DIN), SYS_CTRL_USBHSPHY_CTRL);
 
-    /* select the correct clock now out of reset */
-#ifdef USB_FROM_PLLB
-    writel( (USB_CLK_INTERNAL<< USB_CLK_SEL) | USB_INT_CLK_PLLB, SYS_CTRL_USB_CTRL); // use pllb clock
+	/* select the correct clock now out of reset */
+#ifdef CONFIG_USB_OX820_FROM_PLLB
+	writel( (USB_CLK_INTERNAL<< USB_CLK_SEL) | USB_INT_CLK_PLLB, SYS_CTRL_USB_CTRL); // use pllb clock
 #else
-    writel( (USB_CLK_INTERNAL<< USB_CLK_SEL) | USB_INT_CLK_REF300, SYS_CTRL_USB_CTRL); // use ref300 derived clock
+	writel( (USB_CLK_INTERNAL<< USB_CLK_SEL) | USB_INT_CLK_REF300, SYS_CTRL_USB_CTRL); // use ref300 derived clock
 #endif
 
-    // Enable the clock to the USB block
-    writel(1UL << SYS_CTRL_CKEN_USBHS_BIT, SYS_CTRL_CKEN_SET_CTRL);
+#ifdef CONFIG_USB_OX820_PHYA_IS_HOST
+	// Configure USB PHYA as a host
+	{
+		unsigned long reg;
+		reg = readl(SYS_CTRL_USB_CTRL);
+		reg &= ~(1UL << SYS_CTRL_USB_CTRL_USBAMUX_DEVICE_BIT);
+		writel(reg, SYS_CTRL_USB_CTRL); 
+	}
+#endif
 
-    // Ensure reset and clock operations are complete
-    wmb();
-    
+	// Enable the clock to the USB block
+	writel(1UL << SYS_CTRL_CKEN_USBHS_BIT, SYS_CTRL_CKEN_SET_CTRL);
+
+	// Ensure reset and clock operations are complete
+	wmb();
+	
 	return 0;
 }
 
@@ -398,8 +410,7 @@ static int __devinit ehci_oxnas_drv_probe(struct platform_device *pdev)
 	ehci->regs = hcd->regs +
 		HC_LENGTH(ehci, ehci_readl(ehci, &ehci->caps->hc_capbase));
 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
-	hcd->has_tt = 1;
-//	ehci->sbrn = 0x20;
+	ehci->sbrn = 0x20;
 
 
 

@@ -215,6 +215,22 @@ config USB_EHCI_OXNAS
 	---help---
 	  Enable support for the OX820 SOC's on-chip EHCI controller.
 
+if USB_EHCI_OXNAS
+config USB_OX820_FROM_PLLB
+    bool "OXNAS EHCI clocked by PLLB"
+    depends on USB_EHCI_OXNAS
+    ---help---
+      Switch clock generation of USB to PLLB
+      
+config USB_OX820_PHYA_IS_HOST
+    bool "OXNAS EHCI: PHY A is host"
+    depends on USB_EHCI_OXNAS
+    ---help---
+      Initialize USB PHY A as host.
+      Devices: Medion NAS
+      
+endif
+
 config USB_EHCI_ATH79
 	bool "EHCI support for AR7XXX/AR9XXX SoCs"
 	depends on USB_EHCI_HCD && (SOC_AR71XX || SOC_AR724X || SOC_AR913X)
