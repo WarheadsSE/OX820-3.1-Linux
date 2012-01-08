@@ -35,7 +35,7 @@
 #include <linux/pm_runtime.h>
 #include <mach/hardware.h>
 
-spinlock_t ox820_lock;
+extern spinlock_t oxnas_gpio_spinlock;
 
 #if 0
 #define ox820_printk(x...) printk(x)
@@ -48,7 +48,7 @@ static inline void ox820_switch_to_gpio(unsigned nr)
 	unsigned long flags;
 	unsigned long gpio_mask;
 
-	spin_lock_irqsave(&ox820_lock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
 	
 	if(nr < SYS_CTRL_NUM_PINS)
 	{
@@ -67,7 +67,7 @@ static inline void ox820_switch_to_gpio(unsigned nr)
 		writel(readl(SEC_CTRL_ALTERNATIVE_SEL) & ~(gpio_mask), SEC_CTRL_ALTERNATIVE_SEL);
 	}
 	
-	spin_unlock_irqrestore(&ox820_lock, flags);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 }
 
 static int ox820_gpio_direction_input(struct gpio_chip* gpio, unsigned nr)
@@ -118,7 +118,7 @@ static int ox820_gpio_set_debounce(struct gpio_chip* chip,
 	ox820_printk(KERN_INFO"ox820_gpio.c: set debounce mode for %u = %u\n", nr, debounce);
 	ox820_switch_to_gpio(nr);
 	
-	spin_lock_irqsave(&ox820_lock, flags);
+	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
 	if(nr < SYS_CTRL_NUM_PINS) {
 		writel(readl(GPIO_A_INPUT_DEBOUNCE_ENABLE) | (1 << (nr & 31)), GPIO_A_INPUT_DEBOUNCE_ENABLE);
 	}
@@ -126,7 +126,7 @@ static int ox820_gpio_set_debounce(struct gpio_chip* chip,
 		nr -= SYS_CTRL_NUM_PINS;
 		writel(readl(GPIO_B_INPUT_DEBOUNCE_ENABLE) | (1 << (nr & 31)), GPIO_B_INPUT_DEBOUNCE_ENABLE);
 	}
-	spin_unlock_irqrestore(&ox820_lock, flags);
+	spin_unlock_irqrestore(&oxnas_gpio_spinlock, flags);
 	
 	return 0;
 }
@@ -232,7 +232,6 @@ static struct platform_driver ox820_gpio_driver = {
 static int __init ox820_gpio_platform_init(void)
 {
 	int ret;
-	spin_lock_init(&ox820_lock);
 
 	ret = platform_driver_register(&ox820_gpio_driver);
 	if(0 == ret) {
