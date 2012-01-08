@@ -39,7 +39,7 @@
 
 extern spinlock_t oxnas_gpio_spinlock;
 
-#if 1
+#if 0
 #define ox820_printk(x...) printk(x)
 #else
 #define ox820_printk(x...) {}
@@ -286,8 +286,7 @@ static int ox820_gpio_set_debounce(struct gpio_chip* chip,
 	spin_lock_irqsave(&oxnas_gpio_spinlock, flags);
 	if(nr < SYS_CTRL_NUM_PINS) {
 		writel(readl(GPIO_A_INPUT_DEBOUNCE_ENABLE) | (1 << (nr & 31)), GPIO_A_INPUT_DEBOUNCE_ENABLE);
-	}
-	else {
+	} else {
 		nr -= SYS_CTRL_NUM_PINS;
 		writel(readl(GPIO_B_INPUT_DEBOUNCE_ENABLE) | (1 << (nr & 31)), GPIO_B_INPUT_DEBOUNCE_ENABLE);
 	}
@@ -309,8 +308,7 @@ static int ox820_gpio_direction_output(struct gpio_chip* gpio,
 	
 	if(nr < SYS_CTRL_NUM_PINS) {
 		writel(1 << (nr & 31), GPIO_A_OUTPUT_ENABLE_SET);
-	}
-	else {
+	} else {
 		nr -= SYS_CTRL_NUM_PINS;
 		writel(1 << (nr & 31), GPIO_B_OUTPUT_ENABLE_SET);
 	}
