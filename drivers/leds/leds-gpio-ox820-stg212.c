@@ -42,6 +42,7 @@ struct ox820_gpio_led {
 	struct led_classdev led;
 	unsigned gpio;
 	u8 active_low;
+	u8 delayed_switch_to_output;
 };
 
 static void ox820_gpioleds_set(struct led_classdev* led_cdev,
@@ -59,6 +60,11 @@ static void ox820_gpioleds_set(struct led_classdev* led_cdev,
 		level = !level;
 	}
 	
+	if(led_dat->delayed_switch_to_output && value != LED_OFF) {
+		gpio_direction_output(led_dat->gpio, led_dat->active_low);
+		led_dat->delayed_switch_to_output = 0;
+	}
+	
 	gpio_set_value(led_dat->gpio, level);
 }
 
@@ -69,7 +75,8 @@ static struct ox820_gpio_led ox820_leds[] = {
 			.brightness_set = ox820_gpioleds_set
 		},
 		.gpio = 37,
-		.active_low = 0
+		.active_low = 0,
+		.delayed_switch_to_output = 1
 	},
 	{
 		.led = {
@@ -77,7 +84,8 @@ static struct ox820_gpio_led ox820_leds[] = {
 			.brightness_set = ox820_gpioleds_set
 		},
 		.gpio = 38,
-		.active_low = 1
+		.active_low = 1,
+		.delayed_switch_to_output = 1
 	},
 	{
 		.led = {
@@ -85,7 +93,8 @@ static struct ox820_gpio_led ox820_leds[] = {
 			.brightness_set = ox820_gpioleds_set
 		},
 		.gpio = 40,
-		.active_low = 1
+		.active_low = 1,
+		.delayed_switch_to_output = 1
 	},
 #ifdef CONFIG_LEDS_OX820_STG212_BUZZER
 	{
@@ -94,7 +103,8 @@ static struct ox820_gpio_led ox820_leds[] = {
 			.brightness_set = ox820_gpioleds_set
 		},
 		.gpio = 47,
-		.active_low = 1
+		.active_low = 1,
+		.delayed_switch_to_output = 1
 	}
 #endif
 };
@@ -151,9 +161,11 @@ static int __init ox820_gpioleds_platform_init(void)
 		for(idx = 0; idx < sizeof(ox820_leds) / sizeof(ox820_leds[0]); ++idx) {
 			ret = gpio_request(ox820_leds[idx].gpio, ox820_leds[idx].led.name);
 			if(0 == ret) {
-				ret = gpio_direction_output(ox820_leds[idx].gpio, ox820_leds[idx].active_low);
-				if(0 != ret) {
-					gpio_free(ox820_leds[idx].gpio);
+				if(!ox820_leds[idx].delayed_switch_to_output) {
+					ret = gpio_direction_output(ox820_leds[idx].gpio, ox820_leds[idx].active_low);
+					if(0 != ret) {
+						gpio_free(ox820_leds[idx].gpio);
+					}
 				}
 			}
 			if (0 != ret) {
