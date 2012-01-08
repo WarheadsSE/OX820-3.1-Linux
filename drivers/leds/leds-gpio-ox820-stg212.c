@@ -87,6 +87,7 @@ static struct ox820_gpio_led ox820_leds[] = {
 		.gpio = 40,
 		.active_low = 1
 	},
+#ifdef CONFIG_LEDS_OX820_STG212_BUZZER
 	{
 		.led = {
 			.name = "buzzer",
@@ -95,6 +96,7 @@ static struct ox820_gpio_led ox820_leds[] = {
 		.gpio = 47,
 		.active_low = 1
 	}
+#endif
 };
 
 static int __devinit ox820_gpioleds_probe(struct platform_device* pdev)

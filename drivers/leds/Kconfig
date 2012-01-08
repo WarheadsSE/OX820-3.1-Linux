@@ -30,6 +30,12 @@ config LEDS_OX820_STG212
     depends on GPIO_OX820
     help
         This option enables support for LEDs on Medion NAS
+        
+config LEDS_OX820_STG212_BUZZER
+    bool "Enable Buzzer support for Medion NAS"
+    depends on LEDS_OX820_STG212
+    help
+        This option enables support for Buzzer as LED class
 
 config LEDS_88PM860X
 	tristate "LED Support for Marvell 88PM860x PMIC"
