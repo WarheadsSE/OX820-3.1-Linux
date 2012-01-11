@@ -280,7 +280,7 @@ static int ehci_oxnas_setup(struct usb_hcd *hcd)
 	if (retval)
 		return retval;
 
-	ehci->has_ppcd = 1;
+	ehci->has_ppcd = 0;
 
 	if (ehci_is_TDI(ehci))
 		ehci_reset(ehci);
