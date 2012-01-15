@@ -16,7 +16,7 @@
  */
 
 /* Supports:
- * OX820
+ * OX820 - Pogoplug Series 3
  */
 
 #include "leds-gpio-ox820-common.h"
@@ -55,6 +55,6 @@ static struct ox820_gpio_led ox820_leds[] = {
 
 #include "leds-gpio-ox820-common.c"
 
-MODULE_DESCRIPTION("OX820 GPIO-LED PogoPlugPro driver");
-MODULE_AUTHOR("Sven Bormann");
+MODULE_DESCRIPTION("OX820 GPIO-LED PogoPlug Series 3 driver");
+MODULE_AUTHOR("Jason Plum");
 MODULE_LICENSE("GPL");
