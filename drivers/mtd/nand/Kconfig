@@ -536,4 +536,12 @@ config MTD_NAND_OX820
 	help
 	  Enables support for NAND Flash chips wired onto 820 test board
 
+config MTD_NAND_OX820_POGO
+        tristate "Support for NAND on 820 PPV3 board"
+        depends on MTD_NAND
+        help
+          Enables support for NAND Flash chips wired onto 820 PPV3 board
+
+
+
 endif # MTD_NAND
