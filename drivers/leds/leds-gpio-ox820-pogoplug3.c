@@ -26,7 +26,7 @@
 static struct ox820_gpio_led ox820_leds[] = {
         {
                 .led = {
-                        .name = "blue",
+                        .name = "status:misc:blue",
                         .brightness_set = ox820_gpioleds_set
                 },
                 .gpio = 2,
@@ -35,7 +35,7 @@ static struct ox820_gpio_led ox820_leds[] = {
         },
         {
                 .led = {
-                        .name = "green",
+                        .name = "status:health:green",
                         .brightness_set = ox820_gpioleds_set
                 },
                 .gpio = 49,
@@ -44,7 +44,7 @@ static struct ox820_gpio_led ox820_leds[] = {
         },
         {
                 .led = {
-                        .name = "orange",
+                        .name = "status:fault:orange",
                         .brightness_set = ox820_gpioleds_set
                 },
                 .gpio = 48,
