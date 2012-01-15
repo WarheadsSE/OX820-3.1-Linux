@@ -24,15 +24,33 @@
 #define DRIVER_NAME "ox820-led-gpio-pogoplugpro"
 
 static struct ox820_gpio_led ox820_leds[] = {
-	{
-		.led = {
-			.name = "power",
-			.brightness_set = ox820_gpioleds_set
-		},
-		.gpio = 25,
-		.active_low = 0,
-		.delayed_switch_to_output = 0
-	},
+        {
+                .led = {
+                        .name = "blue",
+                        .brightness_set = ox820_gpioleds_set
+                },
+                .gpio = 2,
+                .active_low = 0,
+                .delayed_switch_to_output = 0
+        },
+        {
+                .led = {
+                        .name = "green",
+                        .brightness_set = ox820_gpioleds_set
+                },
+                .gpio = 49,
+                .active_low = 255,
+                .delayed_switch_to_output = 0
+        },
+        {
+                .led = {
+                        .name = "orange",
+                        .brightness_set = ox820_gpioleds_set
+                },
+                .gpio = 48,
+                .active_low = 255,
+                .delayed_switch_to_output = 0
+        },
 };
 
 #include "leds-gpio-ox820-common.c"
