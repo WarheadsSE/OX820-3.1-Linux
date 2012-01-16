@@ -852,7 +852,7 @@ static void watchdog_timer_action(unsigned long arg)
 	// Interpret the PHY/link state.
 	if (priv->phy_force_negotiation || (priv->watchdog_timer_state == WDS_RESETTING)) {
 		mii_check_link(&priv->mii);
-		ready = 1;
+		ready = 0;
 	} else {
 		/*duplex_changed = mii_check_media_ex(&priv->mii, 1,
 			priv->mii_init_media, &speed_changed, &pause_changed,
