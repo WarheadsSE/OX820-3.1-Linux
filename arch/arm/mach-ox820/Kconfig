@@ -15,6 +15,28 @@ config OXNAS_VERSION_OX820
 
 endchoice
 
+menu "OX820 Implementations"
+
+config MACH_POGOPLUGV3
+	bool "Pogoplug V3"
+	default y
+	help
+	 Support for the Cloud Engines Pogoplug V3 (Pro, Video, Classic)
+
+config MACH_MLP89626
+	bool "Medion Live P89626"
+	default y
+	help
+	 Support for the Medion Life P89626
+
+config MACH_IOMEGAHMNDCE
+	bool "iomega Home Media Network Hard Drive Cloud Edition"
+	default y
+	help
+	 Support for the iomega Home Media Network Hard Drive Cloud Edition
+
+endmenu
+
 config NOMINAL_RPSCLK_FREQ
         int "The input clock frequency to the RPS"
         default 6250000 
