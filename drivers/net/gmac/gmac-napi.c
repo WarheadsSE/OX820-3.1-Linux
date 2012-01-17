@@ -857,7 +857,7 @@ static void watchdog_timer_action(unsigned long arg)
 		/*duplex_changed = mii_check_media_ex(&priv->mii, 1,
 			priv->mii_init_media, &speed_changed, &pause_changed,
 			link_state_change_callback, priv);*/
-		duplex_changed = mii_check_media(&priv->mii, 1, 1);
+		duplex_changed = mii_check_media(&priv->mii, 0, 1);
 		mii_ethtool_gset(&priv->mii, &ecmd);
 		if (ethtool_cmd_speed(&(priv->ethtool_cmd)) != ecmd.speed) {
 			ethtool_cmd_speed_set(&(priv->ethtool_cmd), ecmd.speed);
