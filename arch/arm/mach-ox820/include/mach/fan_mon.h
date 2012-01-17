@@ -16,29 +16,6 @@
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-/**
- * DumpTachoRegisters is a debug function used to inspect hte tacho registers.
- */
-extern void DumpTachoRegisters(void);
-
-
-/**
- * GetTemperature will read the thermistor register and convert the value to
- * kelvin.
- * @return an int that represents the thermister temperature in Kelvin, or a
- * negative value in the case of error.
- */
-extern int GetTemperature(void);
-
-
-/**
- * GetFanRPM will read the fan tacho register and convert the value to
- * RPM.
- * @return an int that represents the fan speed in RPM, or a
- * negative value in the case of error.
- */
-extern int GetFanRPM(void);
-
 #define TACHO_TARGET_CORE_FREQ_HZ       128000//3840000//512000//128000
 //#define TACHO_CORE_TACHO_DIVIDER_VALUE    (((NOMINAL_SYSCLK / TACHO_TARGET_CORE_FREQ_HZ) - 1))
 #define TACHO_CORE_TACHO_DIVIDER_VALUE    (((6250000 / TACHO_TARGET_CORE_FREQ_HZ) - 1))
