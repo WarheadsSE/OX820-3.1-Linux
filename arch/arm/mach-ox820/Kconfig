@@ -21,7 +21,13 @@ config MACH_POGOPLUGV3
 	bool "Pogoplug V3"
 	default y
 	help
-	 Support for the Cloud Engines Pogoplug V3 (Pro, Video, Classic)
+	 Support for the Cloud Engines Pogoplug V3 (without PCI)
+
+config MACH_POGOPLUGV3PCI
+	boot "Pogoplug V3 PCI"
+	default y
+	help
+	 Support for the Cloud Engines Pogoplug V3 (with PCI)
 
 config MACH_MLP89626
 	bool "Medion Live P89626"

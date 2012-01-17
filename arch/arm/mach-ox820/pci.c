@@ -28,6 +28,7 @@
 #include <asm/mach-types.h>
 #include <mach/hardware.h>
 #include <mach/system.h>
+#include "common.h"
 
 #define VERSION_ID_MAGIC 0x082510b5
 
@@ -611,17 +612,44 @@ struct pci_bus *ox820_pci_scan_bus(
 }
 #define CONFIG_OXNAS_PCIE_RESET_GPIO 44 
 #if (CONFIG_OXNAS_PCIE_RESET_GPIO < SYS_CTRL_NUM_PINS)
-#define	PCIE_OUTPUT_SET	GPIO_A_OUTPUT_SET
-#define	PCIE_OUTPUT_CLEAR	GPIO_A_OUTPUT_CLEAR
-#define	PCIE_OUTPUT_ENABLE_SET	GPIO_A_OUTPUT_ENABLE_SET
-#define	PCIE_OUTPUT_ENABLE_CLEAR	GPIO_A_OUTPUT_ENABLE_CLEAR
+	#define	PCIE_OUTPUT_SET			GPIO_A_OUTPUT_SET
+	#define	PCIE_OUTPUT_CLEAR		GPIO_A_OUTPUT_CLEAR
+	#define	PCIE_OUTPUT_ENABLE_SET		GPIO_A_OUTPUT_ENABLE_SET
+	#define	PCIE_OUTPUT_ENABLE_CLEAR	GPIO_A_OUTPUT_ENABLE_CLEAR
 #else
-#define PCIE_RESET_PIN          (CONFIG_OXNAS_PCIE_RESET_GPIO - SYS_CTRL_NUM_PINS)
-#define	PCIE_OUTPUT_SET	GPIO_B_OUTPUT_SET
-#define	PCIE_OUTPUT_CLEAR	GPIO_B_OUTPUT_CLEAR
-#define	PCIE_OUTPUT_ENABLE_SET	GPIO_B_OUTPUT_ENABLE_SET
-#define	PCIE_OUTPUT_ENABLE_CLEAR	GPIO_B_OUTPUT_ENABLE_CLEAR
+	#define PCIE_RESET_PIN          	(CONFIG_OXNAS_PCIE_RESET_GPIO - SYS_CTRL_NUM_PINS)
+	#define	PCIE_OUTPUT_SET			GPIO_B_OUTPUT_SET
+	#define	PCIE_OUTPUT_CLEAR		GPIO_B_OUTPUT_CLEAR
+	#define	PCIE_OUTPUT_ENABLE_SET		GPIO_B_OUTPUT_ENABLE_SET
+	#define	PCIE_OUTPUT_ENABLE_CLEAR	GPIO_B_OUTPUT_ENABLE_CLEAR
 #endif
+
+#ifdef	CONFIG_PCI
+	#if (CONFIG_OXNAS_PCIE_RESET_GPIO < SYS_CTRL_NUM_PINS)
+		#define PCIE_RESET_PIN			CONFIG_OXNAS_PCIE_RESET_GPIO
+		#define	PCIE_RESET_SECONDARY_SEL	SYS_CTRL_SECONDARY_SEL
+		#define	PCIE_RESET_TERTIARY_SEL		SYS_CTRL_TERTIARY_SEL
+		#define	PCIE_RESET_QUATERNARY_SEL	SYS_CTRL_QUATERNARY_SEL
+		#define	PCIE_RESET_DEBUG_SEL		SYS_CTRL_DEBUG_SEL
+		#define	PCIE_RESET_ALTERNATIVE_SEL	SYS_CTRL_ALTERNATIVE_SEL
+	#else
+		#define PCIE_RESET_PIN          	(CONFIG_OXNAS_PCIE_RESET_GPIO - SYS_CTRL_NUM_PINS)
+		#define	PCIE_RESET_SECONDARY_SEL	SEC_CTRL_SECONDARY_SEL
+		#define	PCIE_RESET_TERTIARY_SEL		SEC_CTRL_TERTIARY_SEL
+		#define	PCIE_RESET_QUATERNARY_SEL	SEC_CTRL_QUATERNARY_SEL
+		#define	PCIE_RESET_DEBUG_SEL		SEC_CTRL_DEBUG_SEL
+		#define	PCIE_RESET_ALTERNATIVE_SEL	SEC_CTRL_ALTERNATIVE_SEL
+	#endif
+	{
+		// PCIe card reset line
+		unsigned long pin = ( 1 << PCIE_RESET_PIN);
+		*(volatile u32*)PCIE_RESET_SECONDARY_SEL   &= ~pin ;
+		*(volatile u32*)PCIE_RESET_TERTIARY_SEL    &= ~pin ;
+		*(volatile u32*)PCIE_RESET_QUATERNARY_SEL  &= ~pin ;
+		*(volatile u32*)PCIE_RESET_DEBUG_SEL       &= ~pin ;
+		*(volatile u32*)PCIE_RESET_ALTERNATIVE_SEL &= ~pin ;
+	}
+#endif // CONFIG_PCI
 
 void __init ox820_pci_preinit(void)
 {
@@ -629,40 +657,40 @@ void __init ox820_pci_preinit(void)
 	unsigned long version_id;
 	unsigned long pin = ( 1 << PCIE_RESET_PIN);
 
-    writel(1<<SYS_CTRL_RSTEN_PLLB_BIT, SYS_CTRL_RSTEN_CLR_CTRL); // take PLL B out of reset
-    // reset PCIe cards
-    writel(pin, PCIE_OUTPUT_ENABLE_SET);
-    writel(pin, PCIE_OUTPUT_CLEAR);
-    wmb();
-    mdelay(500);	// wait for PCIe cards to reset and for PLL B to lock
-    writel(pin, PCIE_OUTPUT_ENABLE_CLEAR);	// must tri-state the pin to pull it up, otherwise hardware reset may not work
-    wmb();
+	writel(1<<SYS_CTRL_RSTEN_PLLB_BIT, SYS_CTRL_RSTEN_CLR_CTRL); // take PLL B out of reset
+	// reset PCIe cards
+	writel(pin, PCIE_OUTPUT_ENABLE_SET);
+	writel(pin, PCIE_OUTPUT_CLEAR);
+	wmb();
+	mdelay(500);	// wait for PCIe cards to reset and for PLL B to lock
+	writel(pin, PCIE_OUTPUT_ENABLE_CLEAR);	// must tri-state the pin to pull it up, otherwise hardware reset may not work
+	wmb();
 
-    writel(0x218, SEC_CTRL_PLLB_CTRL0); // set PLL B control information
-	
-    writel(0x0F, SYS_CTRL_HCSL_CTRL); // generate clocks from HCSL buffers
+	writel(0x218, SEC_CTRL_PLLB_CTRL0); // set PLL B control information
 
-    /* Ensure PCIe PHY is properly reset */
-    writel(1UL << SYS_CTRL_RSTEN_PCIEPHY_BIT, SYS_CTRL_RSTEN_SET_CTRL);
-    wmb();
-    writel(1UL << SYS_CTRL_RSTEN_PCIEPHY_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
-    wmb();
+	writel(0x0F, SYS_CTRL_HCSL_CTRL); // generate clocks from HCSL buffers
+
+	/* Ensure PCIe PHY is properly reset */
+	writel(1UL << SYS_CTRL_RSTEN_PCIEPHY_BIT, SYS_CTRL_RSTEN_SET_CTRL);
+	wmb();
+	writel(1UL << SYS_CTRL_RSTEN_PCIEPHY_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
+	wmb();
 
 	/* Ensure both PCIe cores are properly reset */
-    writel(1UL << SYS_CTRL_RSTEN_PCIEA_BIT, SYS_CTRL_RSTEN_SET_CTRL);
-    writel(1UL << SYS_CTRL_RSTEN_PCIEB_BIT, SYS_CTRL_RSTEN_SET_CTRL);
-    wmb();
-    writel(1UL << SYS_CTRL_RSTEN_PCIEA_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
-    writel(1UL << SYS_CTRL_RSTEN_PCIEB_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
-    wmb();
+	writel(1UL << SYS_CTRL_RSTEN_PCIEA_BIT, SYS_CTRL_RSTEN_SET_CTRL);
+	writel(1UL << SYS_CTRL_RSTEN_PCIEB_BIT, SYS_CTRL_RSTEN_SET_CTRL);
+	wmb();
+	writel(1UL << SYS_CTRL_RSTEN_PCIEA_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
+	writel(1UL << SYS_CTRL_RSTEN_PCIEB_BIT, SYS_CTRL_RSTEN_CLR_CTRL);
+	wmb();
 
 	/* Start both PCIe core clocks */
-    writel(1UL << SYS_CTRL_CKEN_PCIEA_BIT, SYS_CTRL_CKEN_SET_CTRL);
-    writel(1UL << SYS_CTRL_CKEN_PCIEB_BIT, SYS_CTRL_CKEN_SET_CTRL);
-    // allow entry to L23 state
-    writel(1UL << SYS_CTRL_PCIE_READY_ENTR_L23_BIT, SYS_CTRL_PCIEA_CTRL);
-    writel(1UL << SYS_CTRL_PCIE_READY_ENTR_L23_BIT, SYS_CTRL_PCIEB_CTRL);
-    wmb();
+	writel(1UL << SYS_CTRL_CKEN_PCIEA_BIT, SYS_CTRL_CKEN_SET_CTRL);
+	writel(1UL << SYS_CTRL_CKEN_PCIEB_BIT, SYS_CTRL_CKEN_SET_CTRL);
+	// allow entry to L23 state
+	writel(1UL << SYS_CTRL_PCIE_READY_ENTR_L23_BIT, SYS_CTRL_PCIEA_CTRL);
+	writel(1UL << SYS_CTRL_PCIE_READY_ENTR_L23_BIT, SYS_CTRL_PCIEB_CTRL);
+	wmb();
 
 	/* Use the version register as an early test for core presence */
 	link_up[0] = link_up[1] = 1;
@@ -896,7 +924,6 @@ static void __exit ox820_pci_exit(void)
 //printk(KERN_INFO "ox820_pci_exit()\n");
 }
 
-subsys_initcall(ox820_pci_init);
 module_exit(ox820_pci_exit);
 
 #endif /* !CONFIG_ARCH_OXNAS_PCIE_DISABLE */
