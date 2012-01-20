@@ -161,7 +161,7 @@ void oxnas_init_time(void) {
   	clockevents_register_device(&ckevt_rps_timer1);
 }
 
-#ifndef CONFIG_GENERIC_TIME
+#ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
 /*
  * Returns number of microseconds since last clock tick interrupt.
  * Note that interrupts will be disabled when this is called
@@ -197,11 +197,11 @@ static unsigned long oxnas_gettimeoffset(void)
 
     return TICKS_TO_US(ticks_since_last_intr);
 }
-#endif // !CONFIG_GENERIC_TIME
+#endif // CONFIG_ARCH_USES_GETTIMEOFFSET
 
 struct sys_timer oxnas_timer = {
     .init   = oxnas_init_time,
-#ifndef CONFIG_GENERIC_TIME
+#ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
     //.offset = oxnas_gettimeoffset,
-#endif // !CONFIG_GENERIC_TIME
+#endif // CONFIG_ARCH_USES_GETTIMEOFFSET
 };
