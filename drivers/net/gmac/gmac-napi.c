@@ -1,5 +1,4 @@
-/*
- * linux/arch/arm/mach-oxnas/gmac.c
+/* linux/arch/arm/mach-oxnas/gmac.c
  *
  * Copyright (C) 2005 Oxford Semiconductor Ltd
  *
@@ -848,15 +847,27 @@ static void watchdog_timer_action(unsigned long arg)
     int duplex_changed;
     int speed_changed;
     int pause_changed;
+    struct ethtool_cmd ecmd = { .cmd = ETHTOOL_GSET };
 
 	// Interpret the PHY/link state.
 	if (priv->phy_force_negotiation || (priv->watchdog_timer_state == WDS_RESETTING)) {
 		mii_check_link(&priv->mii);
-		ready = 1;
+		ready = 0;
 	} else {
 		/*duplex_changed = mii_check_media_ex(&priv->mii, 1,
 			priv->mii_init_media, &speed_changed, &pause_changed,
 			link_state_change_callback, priv);*/
+		duplex_changed = mii_check_media(&priv->mii, 0, 1);
+		mii_ethtool_gset(&priv->mii, &ecmd);
+		if (ethtool_cmd_speed(&(priv->ethtool_cmd)) != ecmd.speed) {
+			ethtool_cmd_speed_set(&(priv->ethtool_cmd), ecmd.speed);
+			speed_changed = 1;
+		}
+		if ((duplex_changed || speed_changed) || (duplex_changed && speed_changed)) {
+			link_state_change_callback(1, priv);
+		} else {
+			link_state_change_callback(0, priv);
+		}
 		priv->mii_init_media = 0;
 		ready = netif_carrier_ok(priv->netdev);
 	}
