@@ -198,7 +198,7 @@
 #define RPS_GPIO_CHIPID                       (RPS_BASE + 0x3FC)
 
 /* Timer registers */
-#define RPS_TIMER_BASE  (RPS_BASE + 0x200)
+#define RPS_TIMER_BASE  (RPSA_BASE + 0x200)
 #define RPS_TIMER1_BASE (RPS_TIMER_BASE)
 #define RPS_TIMER2_BASE (RPS_TIMER_BASE + 0x20)
 
