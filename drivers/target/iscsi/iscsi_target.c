@@ -1043,6 +1043,8 @@ done:
 		 */
 		send_check_condition = 1;
 	} else {
+		cmd->data_length = cmd->se_cmd.data_length;
+
 		if (iscsit_decide_list_to_build(cmd, payload_length) < 0)
 			return iscsit_add_reject_from_cmd(
 				ISCSI_REASON_BOOKMARK_NO_RESOURCES,
@@ -1079,7 +1081,9 @@ attach_cmd:
 	 */
 	if (!cmd->immediate_data) {
 		cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
-		if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
+		if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
+			return 0;
+		else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
 			return iscsit_add_reject_from_cmd(
 				ISCSI_REASON_PROTOCOL_ERROR,
 				1, 0, buf, cmd);
@@ -1819,17 +1823,16 @@ attach:
 		int cmdsn_ret = iscsit_sequence_cmd(conn, cmd, hdr->cmdsn);
 		if (cmdsn_ret == CMDSN_HIGHER_THAN_EXP)
 			out_of_order_cmdsn = 1;
-		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP) {
+		else if (cmdsn_ret == CMDSN_LOWER_THAN_EXP)
 			return 0;
-		} else { /* (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER) */
+		else if (cmdsn_ret == CMDSN_ERROR_CANNOT_RECOVER)
 			return iscsit_add_reject_from_cmd(
 					ISCSI_REASON_PROTOCOL_ERROR,
 					1, 0, buf, cmd);
-		}
 	}
 	iscsit_ack_from_expstatsn(conn, hdr->exp_statsn);
 
-	if (out_of_order_cmdsn)
+	if (out_of_order_cmdsn || !(hdr->opcode & ISCSI_OP_IMMEDIATE))
 		return 0;
 	/*
 	 * Found the referenced task, send to transport for processing.
@@ -2511,10 +2514,10 @@ static int iscsit_send_data_in(
 	if (hdr->flags & ISCSI_FLAG_DATA_STATUS) {
 		if (cmd->se_cmd.se_cmd_flags & SCF_OVERFLOW_BIT) {
 			hdr->flags |= ISCSI_FLAG_DATA_OVERFLOW;
-			hdr->residual_count = cpu_to_be32(cmd->residual_count);
+			hdr->residual_count = cpu_to_be32(cmd->se_cmd.residual_count);
 		} else if (cmd->se_cmd.se_cmd_flags & SCF_UNDERFLOW_BIT) {
 			hdr->flags |= ISCSI_FLAG_DATA_UNDERFLOW;
-			hdr->residual_count = cpu_to_be32(cmd->residual_count);
+			hdr->residual_count = cpu_to_be32(cmd->se_cmd.residual_count);
 		}
 	}
 	hton24(hdr->dlength, datain.length);
@@ -3016,10 +3019,10 @@ static int iscsit_send_status(
 	hdr->flags		|= ISCSI_FLAG_CMD_FINAL;
 	if (cmd->se_cmd.se_cmd_flags & SCF_OVERFLOW_BIT) {
 		hdr->flags |= ISCSI_FLAG_CMD_OVERFLOW;
-		hdr->residual_count = cpu_to_be32(cmd->residual_count);
+		hdr->residual_count = cpu_to_be32(cmd->se_cmd.residual_count);
 	} else if (cmd->se_cmd.se_cmd_flags & SCF_UNDERFLOW_BIT) {
 		hdr->flags |= ISCSI_FLAG_CMD_UNDERFLOW;
-		hdr->residual_count = cpu_to_be32(cmd->residual_count);
+		hdr->residual_count = cpu_to_be32(cmd->se_cmd.residual_count);
 	}
 	hdr->response		= cmd->iscsi_response;
 	hdr->cmd_status		= cmd->se_cmd.scsi_status;
@@ -3131,6 +3134,7 @@ static int iscsit_send_task_mgt_rsp(
 	hdr			= (struct iscsi_tm_rsp *) cmd->pdu;
 	memset(hdr, 0, ISCSI_HDR_LEN);
 	hdr->opcode		= ISCSI_OP_SCSI_TMFUNC_RSP;
+	hdr->flags		= ISCSI_FLAG_CMD_FINAL;
 	hdr->response		= iscsit_convert_tcm_tmr_rsp(se_tmr);
 	hdr->itt		= cpu_to_be32(cmd->init_task_tag);
 	cmd->stat_sn		= conn->stat_sn++;

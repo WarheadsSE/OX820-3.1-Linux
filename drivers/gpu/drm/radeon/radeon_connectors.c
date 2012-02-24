@@ -44,8 +44,6 @@ extern void
 radeon_legacy_backlight_init(struct radeon_encoder *radeon_encoder,
 			     struct drm_connector *drm_connector);
 
-bool radeon_connector_encoder_is_dp_bridge(struct drm_connector *connector);
-
 void radeon_connector_hotplug(struct drm_connector *connector)
 {
 	struct drm_device *dev = connector->dev;
@@ -724,6 +722,7 @@ radeon_vga_detect(struct drm_connector *connector, bool force)
 		dret = radeon_ddc_probe(radeon_connector,
 					radeon_connector->requires_extended_probe);
 	if (dret) {
+		radeon_connector->detected_by_load = false;
 		if (radeon_connector->edid) {
 			kfree(radeon_connector->edid);
 			radeon_connector->edid = NULL;
@@ -750,12 +749,21 @@ radeon_vga_detect(struct drm_connector *connector, bool force)
 	} else {
 
 		/* if we aren't forcing don't do destructive polling */
-		if (!force)
-			return connector->status;
+		if (!force) {
+			/* only return the previous status if we last
+			 * detected a monitor via load.
+			 */
+			if (radeon_connector->detected_by_load)
+				return connector->status;
+			else
+				return ret;
+		}
 
 		if (radeon_connector->dac_load_detect && encoder) {
 			encoder_funcs = encoder->helper_private;
 			ret = encoder_funcs->detect(encoder, connector);
+			if (ret != connector_status_disconnected)
+				radeon_connector->detected_by_load = true;
 		}
 	}
 
@@ -897,6 +905,7 @@ radeon_dvi_detect(struct drm_connector *connector, bool force)
 		dret = radeon_ddc_probe(radeon_connector,
 					radeon_connector->requires_extended_probe);
 	if (dret) {
+		radeon_connector->detected_by_load = false;
 		if (radeon_connector->edid) {
 			kfree(radeon_connector->edid);
 			radeon_connector->edid = NULL;
@@ -959,8 +968,18 @@ radeon_dvi_detect(struct drm_connector *connector, bool force)
 	if ((ret == connector_status_connected) && (radeon_connector->use_digital == true))
 		goto out;
 
+	/* DVI-D and HDMI-A are digital only */
+	if ((connector->connector_type == DRM_MODE_CONNECTOR_DVID) ||
+	    (connector->connector_type == DRM_MODE_CONNECTOR_HDMIA))
+		goto out;
+
+	/* if we aren't forcing don't do destructive polling */
 	if (!force) {
-		ret = connector->status;
+		/* only return the previous status if we last
+		 * detected a monitor via load.
+		 */
+		if (radeon_connector->detected_by_load)
+			ret = connector->status;
 		goto out;
 	}
 
@@ -985,6 +1004,8 @@ radeon_dvi_detect(struct drm_connector *connector, bool force)
 					if (ret == connector_status_connected) {
 						radeon_connector->use_digital = false;
 					}
+					if (ret != connector_status_disconnected)
+						radeon_connector->detected_by_load = true;
 				}
 				break;
 			}
@@ -1181,7 +1202,8 @@ static int radeon_dp_get_modes(struct drm_connector *connector)
 		}
 	} else {
 		/* need to setup ddc on the bridge */
-		if (radeon_connector_encoder_is_dp_bridge(connector)) {
+		if (radeon_connector_encoder_get_dp_bridge_encoder_id(connector) !=
+			ENCODER_OBJECT_ID_NONE) {
 			if (encoder)
 				radeon_atom_ext_encoder_setup_ddc(encoder);
 		}
@@ -1191,13 +1213,12 @@ static int radeon_dp_get_modes(struct drm_connector *connector)
 	return ret;
 }
 
-bool radeon_connector_encoder_is_dp_bridge(struct drm_connector *connector)
+u16 radeon_connector_encoder_get_dp_bridge_encoder_id(struct drm_connector *connector)
 {
 	struct drm_mode_object *obj;
 	struct drm_encoder *encoder;
 	struct radeon_encoder *radeon_encoder;
 	int i;
-	bool found = false;
 
 	for (i = 0; i < DRM_CONNECTOR_MAX_ENCODER; i++) {
 		if (connector->encoder_ids[i] == 0)
@@ -1213,14 +1234,13 @@ bool radeon_connector_encoder_is_dp_bridge(struct drm_connector *connector)
 		switch (radeon_encoder->encoder_id) {
 		case ENCODER_OBJECT_ID_TRAVIS:
 		case ENCODER_OBJECT_ID_NUTMEG:
-			found = true;
-			break;
+			return radeon_encoder->encoder_id;
 		default:
 			break;
 		}
 	}
 
-	return found;
+	return ENCODER_OBJECT_ID_NONE;
 }
 
 bool radeon_connector_encoder_is_hbr2(struct drm_connector *connector)
@@ -1297,7 +1317,8 @@ radeon_dp_detect(struct drm_connector *connector, bool force)
 		if (!radeon_dig_connector->edp_on)
 			atombios_set_edp_panel_power(connector,
 						     ATOM_TRANSMITTER_ACTION_POWER_OFF);
-	} else if (radeon_connector_encoder_is_dp_bridge(connector)) {
+	} else if (radeon_connector_encoder_get_dp_bridge_encoder_id(connector) !=
+		   ENCODER_OBJECT_ID_NONE) {
 		/* DP bridges are always DP */
 		radeon_dig_connector->dp_sink_type = CONNECTOR_OBJECT_ID_DISPLAYPORT;
 		/* get the DPCD from the bridge */

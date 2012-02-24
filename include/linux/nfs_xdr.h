@@ -602,11 +602,16 @@ struct nfs_getaclargs {
 	size_t				acl_len;
 	unsigned int			acl_pgbase;
 	struct page **			acl_pages;
+	struct page *			acl_scratch;
 	struct nfs4_sequence_args 	seq_args;
 };
 
+/* getxattr ACL interface flags */
+#define NFS4_ACL_LEN_REQUEST	0x0001	/* zero length getxattr buffer */
 struct nfs_getaclres {
 	size_t				acl_len;
+	size_t				acl_data_offset;
+	int				acl_flags;
 	struct nfs4_sequence_res	seq_res;
 };
 
@@ -1194,6 +1199,7 @@ struct nfs_rpc_ops {
 	const struct dentry_operations *dentry_ops;
 	const struct inode_operations *dir_inode_ops;
 	const struct inode_operations *file_inode_ops;
+	const struct file_operations *file_ops;
 
 	int	(*getroot) (struct nfs_server *, struct nfs_fh *,
 			    struct nfs_fsinfo *);
